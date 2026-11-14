@@ -164,6 +164,14 @@ Comprobación de la API: `GET http://127.0.0.1:3000/health` responde `{"estado":
 
 Las contraseñas de las cuentas DEMO se generan al cargarlas y se guardan en `_work/secrets/`, en la carpeta que contiene el repositorio, fuera de Git; la consola solo muestra esa ruta. Para la app móvil, consulta la [guía del teléfono](docs/movil/guia-instalacion-y-pruebas.md).
 
+## Demo en línea
+
+El mismo código corre en Railway (API y panel en un servicio, PostgreSQL por red privada, volúmenes persistentes), solo con datos DEMO:
+
+- **Panel del equipo:** https://softarq-production.up.railway.app
+- **App Android (APK de distribución interna, sin Metro ni cable):** [página de la compilación](https://expo.dev/accounts/raulherrera09/projects/softarq-demo/builds/670bc4bc-1f71-4c2b-a657-537bc84337e7) · [descarga directa del APK](https://expo.dev/artifacts/eas/YTeeCk-i2II_ctPN7pfyNnkaaxnbCmwSyx_jrTKX2so.apk). Es la compilación de la versión 0.1.0; Expo conserva los artefactos por tiempo limitado. Al instalarla, Android pedirá permitir la instalación de orígenes desconocidos.
+- Las cuentas de la demostración no se publican; las entrega el propietario. Despliegue, actualización, respaldo y parada: [guía de despliegue](docs/operacion/despliegue-railway.md).
+
 ## Configuración
 
 Los archivos de ejemplo no contienen valores secretos:

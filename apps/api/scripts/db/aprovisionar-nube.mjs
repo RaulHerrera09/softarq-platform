@@ -30,10 +30,15 @@ try {
     const lit = (await cliente.query("SELECT quote_literal($1) AS v", [clave])).rows[0].v;
     await cliente.query(`${rowCount ? "ALTER" : "CREATE"} ROLE ${rol} ${atributos} PASSWORD ${lit}`);
   }
+  // El volcado local trae privilegios de softarq_respaldo (rol de solo lectura del respaldo local). Aquí existe SIN
+  // inicio de sesión: los GRANT del volcado se aplican, pero nadie puede usarlo.
+  const { rowCount: hayRespaldo } = await cliente.query("SELECT 1 FROM pg_roles WHERE rolname = 'softarq_respaldo'");
+  if (!hayRespaldo) await cliente.query("CREATE ROLE softarq_respaldo NOLOGIN NOSUPERUSER NOCREATEDB NOCREATEROLE NOINHERIT NOREPLICATION NOBYPASSRLS");
   const b = cliente.escapeIdentifier(base);
   await cliente.query(`REVOKE CONNECT, TEMPORARY ON DATABASE ${b} FROM PUBLIC`);
   await cliente.query(`GRANT CONNECT ON DATABASE ${b} TO softarq_app`);
-  await cliente.query(`GRANT CONNECT, TEMPORARY ON DATABASE ${b} TO softarq_migrator`);
+  // CREATE: las migraciones usan CREATE EXTENSION btree_gist (extensión de confianza); sin ser superusuario exige este privilegio.
+  await cliente.query(`GRANT CONNECT, TEMPORARY, CREATE ON DATABASE ${b} TO softarq_migrator`);
   await cliente.query("ALTER SCHEMA public OWNER TO softarq_migrator");
   await cliente.query("REVOKE CREATE ON SCHEMA public FROM PUBLIC");
   await cliente.query("GRANT USAGE ON SCHEMA public TO softarq_app");
