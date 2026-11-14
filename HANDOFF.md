@@ -2,7 +2,7 @@
 
 > Léelo al empezar. Actualízalo al terminar cada tarea (sección por sección, sin borrar el historial de la tabla 4). Reglas de trabajo: [`AGENTS.md`](AGENTS.md).
 
-**Última actualización:** 24/10/2026 (cierre del día) · Claude Code · **E2, app del cliente, con la primera prueba en el teléfono declarada por el propietario** (§29), sobre E1 (§28, `b8b9b83`). Sin cambios de reglas de negocio ni del motor; migraciones: ninguna en E2.
+**Última actualización:** 14/11/2026 · presentación revisada, README y publicación (§32) · antes: presentación y respaldo cifrado con Vigenère (§31) · antes: 24/10/2026 (cierre del día) · Claude Code · **E2, app del cliente, con la primera prueba en el teléfono declarada por el propietario** (§29), sobre E1 (§28, `b8b9b83`). Sin cambios de reglas de negocio ni del motor; migraciones: ninguna en E2.
 
 ## 1. Estado actual
 
@@ -1808,3 +1808,43 @@ El propietario cambió el método: Claude diagnostica, corrige y verifica de for
 **Limitaciones y pendientes (no ejecutados, no atribuidos al propietario):** C13, C9 y C5 formales; borrado de la caché de PDF al cerrar sesión con Raul; texto grande, tema claro y movimiento reducido en otras pantallas; fluidez del croquis sin medir; PR-41 a PR-44 del Excel y datos reales/validaciones del capítulo 8; ejecución formal de la guía manual.
 
 **Fuera de esta etapa:** Railway (TLS, cookie `Secure`, proxy, limitadores, documentos compartidos, respaldo remoto), preparación para publicación y modelado 3D. Sin push ni despliegue.
+
+## 31. Presentación para el profesor y respaldo cifrado con Vigenère (14/11/2026)
+
+**Estado al empezar:** `main`, HEAD `3edc029` (integración con el commit inicial del remoto; `814c068`, la aceptación del DEMO, está en la historia). Un solo remoto: `origin` → `RaulHerrraLAMAR/softarq-platform` (no se modificó; falta identificar cuál de los dos repositorios es el escolar y cuál el personal antes de publicar). Graphify VIGENTE.
+
+**Requisito del profesor: Vigenère en el respaldo (hecho, probado, SIN commit)**
+- ADR-0024 y guía `docs/operacion/respaldo-y-restauracion.md` §9. Código en `apps/api/scripts/respaldo/`: `vigenere.mjs` (alfabeto de 256 bytes, `c=(p+k) mod 256`, clave = UTF-8 NFC ≥ 16 bytes repetida por archivo, flujo por bloques de 256 KiB, clave en variable `SOFTARQ_RESPALDO_CLAVE_VIGENERE` o DPAPI en `_work\secrets\respaldo-vigenere.dpapi`), `cifrar.mjs` (cifrar, verificar, descifrar, clave-crear, clave-mostrar), `probar-cifrado.mjs` y `__tests__/vigenere.test.mjs`. Scripts `respaldo:cifrar`, `respaldo:verificar-cifrado`, `respaldo:descifrar`, `respaldo:clave-crear`, `respaldo:clave-mostrar`, `respaldo:probar-cifrado`.
+- Se cifran por separado volcado, cada PDF y el manifiesto original, en `respaldos\softarq_dev_vigenere\<ID>\` con `manifiesto-cifrado.json` en claro (SHA-256 del claro y del cifrado, sin clave). El respaldo original y los manifiestos históricos no se tocan.
+- **Pruebas realmente ejecutadas hoy:** `vitest run scripts/respaldo` → 3 archivos, **43/43**; `pnpm respaldo:probar-cifrado` → **24/24** (respaldo real nuevo `softarq_dev-20261114T170714Z-fcd929`: 12 archivos cifrados, bytes recuperados idénticos por SHA-256, `respaldo:verificar` válido, restauración **solo** en `softarq_restauracion` con las 37 tablas iguales al manifiesto y `documentos:revisar` limpio; clave incorrecta, truncado, alterado, PDF alterado, archivo ausente, sin clave y clave corta detectados; documentos de desarrollo intactos; pico de 64 MiB). Informe: `_work\evidencias\vigenere-softarq_dev-20261114T170714Z-fcd929\informe.txt`. No se repitió la suite de la API ni se tocó código de la aplicación.
+- **Acción pendiente del propietario:** se creó la clave local (DPAPI, no se muestra). Guarda una copia aparte en tu terminal con `pnpm --filter @softarq/api respaldo:clave-mostrar --confirmar` (gestor de contraseñas o papel; nunca Git ni chat). Sin ella los respaldos cifrados no se recuperan, y DPAPI solo sirve con esta cuenta de Windows.
+- **Límites:** Vigenère es un cifrado clásico (requisito académico), no autentica; los SHA-256 no son autenticación. Probado con un volcado pequeño (639 KB). **Cifrado autenticado moderno para Railway: previsto, NO implementado.**
+- Se creó un respaldo real nuevo y su copia cifrada (más una descifrada en `_work\respaldo-descifrado`); no se borró nada.
+
+**Presentación (hecha, fuera de Git)**
+- `C:\Proyecto_SoftArq\Proyecto_SoftArq\presentacion\SoftArq_Presentacion_Demo.pptx` (20 diapositivas: 18 principales y 2 anexos, con notas del expositor) y `SoftArq_Presentacion_Demo.pdf`. Fuente, capturas, fuentes OFL y render en la misma carpeta (`LEEME.md`).
+- Capturas del panel reales (API y web locales sobre `softarq_dev`, datos DEMO, Edge/Playwright, mis procesos ya detenidos). Pantallas de la app: del **prototipo aprobado** (ADR-0022), **no del teléfono** (no estaba conectado); rotuladas así en la diapositiva. Ejemplo de Raul verificado en pantalla: SOL-2026-00003 (enviada 31/10/2026, estimación $37,835.35) → COT-2026-00056 emitida el 07/11/2026, vigente hasta el 22/11/2026, PDF de 22,733 bytes.
+- Revisión: cada diapositiva se renderizó con **Microsoft PowerPoint (automatización COM)**, que también exportó el PDF y abrió el archivo (20 diapositivas, 42 partes de notas); se corrigieron desbordes y solapes iterando. No se abrió con otro programa. Se instalaron por usuario las fuentes Bricolage Grotesque e Inter (HKCU) para el render; en otro equipo hay que instalarlas (están en `recursos\fuentes`) o PowerPoint sustituirá la tipografía.
+- Cifras de pruebas de la diapositiva 16: las automatizadas son las registradas arriba (§30), no repetidas hoy.
+
+**Siguiente paso:** el propietario revisa el PowerPoint y custodia la clave. Después: commit del Vigenère (código, pruebas, ADR-0024 y guía), identificar los dos repositorios (escolar y personal), README profesional, publicación y Railway (TLS, cookie `Secure`, proxy, documentos persistentes, respaldo remoto con cifrado autenticado, APK). Sin push, despliegue ni EAS en esta sesión.
+
+## 32. Presentación revisada, README y publicación (14/11/2026)
+
+**Decisiones del propietario:** diseño, estructura e imágenes de la presentación aprobados; clave del respaldo guardada aparte. Autorizó commits y la publicación normal en su GitHub personal.
+
+**Presentación (fuera de Git)**
+- `C:\Proyecto_SoftArq\Proyecto_SoftArq\presentacion\SoftArq_Presentacion_Demo.pptx` y `.pdf` (20 diapositivas) con la redacción centrada en el sistema que funciona: diapositivas 3, 13, 15, 16 («Verificación del sistema»), 17 (capacidades), 18 («Evolución del producto»), anexos A y B («Recursos visuales y referencias») y notas del expositor reescritas; vistas móviles rotuladas «Vista ilustrativa de la app»; RF-26 como «Exportación de 15 tablas y manifiesto». Se corrigió además el texto alternativo de las imágenes, que contenía rutas locales.
+- Copia de la versión anterior: `presentacion\versiones\SoftArq_Presentacion_Demo_v1_14nov.pptx` y `.pdf`.
+- Renderizada y exportada con Microsoft PowerPoint (COM); se revisaron las diapositivas modificadas y se ajustó la 18.
+
+**README** (`README.md`, reescrito): producto, funciones, recorrido, arquitectura (Mermaid), stack, estructura, requisitos, instalación y arranque, configuración, permisos, pruebas, respaldo y Vigenère académico, enlaces. Imágenes optimizadas en `docs/imagenes/` (JPEG de 48–129 KB: capturas del panel con datos DEMO y vistas ilustrativas de la app). `.env.example` ya no lleva la ruta de la laptop para `SOFTARQ_DIR_DOCUMENTOS`. No menciona Railway ni la APK en línea (se documentarán con sus direcciones reales tras el despliegue). Comandos: los de instalación vienen de la documentación existente; hoy se ejecutaron `build` y `start` de la API y `vite` del panel, no una instalación desde cero.
+
+**Repositorios y publicación**
+- `origin` → `https://github.com/RaulHerrraLAMAR/softarq-platform.git` (**escolar**; único remoto previo y donde se publicó el 07/11). `personal` → `https://github.com/RaulHerrera09/softarq-platform.git` (**personal**; tenía solo un `Initial commit` con README de una línea, historial independiente).
+- El historial personal se **integró** en `main` con un merge normal (`-X ours`, conserva el README nuevo), sin force-push ni borrado de ramas; ambos remotos recibieron un push normal (avance rápido). **Rama definitiva en los dos: `main`.**
+- Autenticación: Git Credential Manager local; se configuró `credential.https://github.com/RaulHerrera09.*` en el `.git/config` del clon para la cuenta personal. No se pidió ninguna contraseña ni token.
+- Revisión previa a publicar: 65 commits de historial sin archivos `.env`, claves, `.dpapi`, `.vig`, volcados, respaldos ni binarios privados; ninguna de las 17 contraseñas y secretos locales aparece en el historial; sin patrones de tokens ni rutas de perfil de usuario en lo nuevo.
+- Hashes: `3edc029` (anterior en origin) → **`9f0bd19`** (merge) con `9a752f4` (README) y `a7498bf` (Vigenère) debajo; `origin/main` y `personal/main` verificados con `git ls-remote` igual al HEAD local `9f0bd19…`. Un commit posterior solo de este HANDOFF se publica a continuación (ver `git log`).
+
+**Siguiente paso:** preparar y publicar juntos en Railway la web, la API, PostgreSQL y los documentos persistentes (HTTPS, cookie `Secure`, proxy, límites compartidos, respaldo remoto con cifrado autenticado) y una APK conectada a la API HTTPS (una sola build EAS). Sin Railway ni EAS en esta etapa.
