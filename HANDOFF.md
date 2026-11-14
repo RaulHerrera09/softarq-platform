@@ -2,7 +2,7 @@
 
 > Léelo al empezar. Actualízalo al terminar cada tarea (sección por sección, sin borrar el historial de la tabla 4). Reglas de trabajo: [`AGENTS.md`](AGENTS.md).
 
-**Última actualización:** 14/11/2026 · presentación revisada, README y publicación (§32) · antes: presentación y respaldo cifrado con Vigenère (§31) · antes: 24/10/2026 (cierre del día) · Claude Code · **E2, app del cliente, con la primera prueba en el teléfono declarada por el propietario** (§29), sobre E1 (§28, `b8b9b83`). Sin cambios de reglas de negocio ni del motor; migraciones: ninguna en E2.
+**Última actualización:** 14/11/2026 · aceptación final y cierre (§36) · antes: presentación revisada, README y publicación (§32) · antes: presentación y respaldo cifrado con Vigenère (§31) · antes: 24/10/2026 (cierre del día) · Claude Code · **E2, app del cliente, con la primera prueba en el teléfono declarada por el propietario** (§29), sobre E1 (§28, `b8b9b83`). Sin cambios de reglas de negocio ni del motor; migraciones: ninguna en E2.
 
 ## 1. Estado actual
 
@@ -1899,3 +1899,12 @@ El propietario cambió el método: Claude diagnostica, corrige y verifica de for
 **Consumo y límites (14/11/2026, ~16:00 CST):** 0,0091 USD en el ciclo (14/11–14/12); API ≈ 171 MB y PostgreSQL ≈ 115 MB, < 0,01 vCPU; proyección observada del ciclo ≈ 3 USD (por debajo del tope de 10 USD). Siguen guardados: alerta de 5 USD, hard limit de 10 USD y Railway Agent bloqueado (0 USD).
 
 **Pendiente:** el propietario cierra PowerPoint y reemplaza el PPTX; revisión final; cancelar solo al terminar la exposición (la guía distingue detener, eliminar y cancelar la suscripción; nada de eso se ejecutó).
+
+
+## 36. Aceptación final y cierre (14/11/2026)
+
+**Aceptación del propietario (declaración suya, no una prueba ejecutada por Claude):** da por aceptado y terminado el proyecto para su entrega y exposición académica. Confirma personalmente que (1) probó el recorrido completo de la app y el panel y funciona correctamente, (2) reemplazó las contraseñas temporales de las cuentas por contraseñas personales y (3) revisó y aprobó la presentación final. Sus contraseñas no se guardan en ningún archivo ni repositorio. Esta aceptación se distingue de las verificaciones automatizadas registradas en §33–§35, que son comprobaciones técnicas de Claude y no sustituyen ni equivalen a ella; tampoco sustituye a los pendientes de la fase 1 del Excel (PR-41 a PR-44, datos reales).
+
+**Respaldo final de la nube (procedimiento probado, `scripts/nube/respaldar-nube.mjs`):** `softarq_dev-20261114T231737Z-e06c9b`, COMPLETO, AES-256-GCM, 24 archivos (1.205.152 bytes): base, manifiesto y 21 PDF con SHA-256; 37 tablas; última migración `20261101000000_clasificacion_clientes`. Descargado, reunido por bloques con SHA-256, descifrado y verificado en la laptop. Ubicación: `C:\Proyecto_SoftArq\Proyecto_SoftArq\respaldos\softarq_nube\softarq_dev-20261114T231737Z-e06c9b` (cifrado; la clave está aparte, en `_work\secrets\nube-railway.json`) y `_work\respaldo-descifrado-aead\…` (descifrado de trabajo). No se restauró de nuevo (la restauración aislada ya se probó con respaldos anteriores).
+
+**Estado:** Railway sigue en marcha (`softarq` y `Postgres` en línea, `/health` correcto), sin cambios de configuración, de plan ni de suscripción. Límites guardados: alerta de 5 USD, hard limit de 10 USD y Railway Agent bloqueado (0 USD). Consumo del ciclo (14/11–14/12/2026): 0,0164 USD al cierre. No quedan procesos locales de Claude (API, web, pruebas); sin despliegues, compilaciones ni funciones nuevas en este cierre. Cualquier ajuste posterior será puntual (principalmente la presentación). Cancelar o eliminar solo al terminar la exposición, según la guía (detener ≠ eliminar ≠ cancelar la suscripción); no se ejecutó nada de eso.

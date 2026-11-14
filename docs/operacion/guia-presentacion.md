@@ -39,3 +39,9 @@ Ejemplos completos conservados (solicitud → atención → precios → revisió
 ## Preparación y comprobaciones
 
 Scripts en `scripts/nube/` (ver la [guía de despliegue](despliegue-railway.md)): `preparar-cuentas.mjs`, `crear-ejemplos.mjs`, `limpiar-demo.mjs`, `recorrido-nube.mjs`, `verificar-historial.mjs`, `respaldar-nube.mjs`.
+
+## Aceptación y cierre
+
+**Aceptación del propietario (14/11/2026), declaración suya:** el proyecto queda aceptado y terminado para su entrega y exposición académica. Confirma que probó personalmente el recorrido completo de la app y el panel, que reemplazó las contraseñas temporales por contraseñas personales (no se guardan en ningún archivo ni repositorio) y que revisó y aprobó la presentación final. Es una aceptación humana; las pruebas automatizadas y las verificaciones en línea descritas en esta documentación son comprobaciones técnicas distintas y no la sustituyen.
+
+**Respaldo final de la nube:** `softarq_dev-20261114T231737Z-e06c9b` (AES-256-GCM, 24 archivos, base y 21 PDF), descargado y verificado con `scripts/nube/respaldar-nube.mjs`; cifrado en `respaldos\softarq_nube\` de la laptop del propietario, con la clave guardada aparte.
