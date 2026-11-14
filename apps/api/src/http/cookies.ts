@@ -5,7 +5,7 @@
  * - Host-only: sin atributo `Domain`; solo la recibe el host que la emitió (`localhost`).
  * - `Path=/api/v1` y `SameSite=Strict`, explícitos.
  * - `Max-Age` igual a lo que falta para la expiración absoluta (el servidor la aplica de todos modos).
- * - **Excepción local de `Secure`:** se omite porque la API solo funciona por HTTP en
+ * - **`Secure`:** se activa en la nube (HTTPS, ADR-0025). Solo se omite en local, donde la API funciona por HTTP en
  *   127.0.0.1 (`API_HOST` no admite otro valor, los orígenes deben ser http locales y
  *   `NODE_ENV=production` se rechaza al arrancar). Antes de publicar: TLS, `Secure` y prefijo `__Host-`.
  */
@@ -15,12 +15,19 @@ import type { Request, Response } from "express";
 export const NOMBRE_COOKIE_SESION = "softarq_sesion";
 const RUTA_COOKIE = "/api/v1";
 
-const BASE: CookieSerializeOptions = {
+let cookieSegura = false;
+
+/** La nube (HTTPS) activa `Secure`; en local no hay TLS (ADR-0025). Se fija al crear la aplicación. */
+export function configurarCookieSegura(segura: boolean): void {
+  cookieSegura = segura;
+}
+
+const base = (): CookieSerializeOptions => ({
   httpOnly: true,
   sameSite: "strict",
   path: RUTA_COOKIE,
-  secure: false,
-};
+  secure: cookieSegura,
+});
 
 /** Valor de la cookie de sesión de la solicitud, si existe (sin validarlo). */
 export function leerCookieSesion(req: Request): string | undefined {
@@ -32,11 +39,11 @@ export function leerCookieSesion(req: Request): string | undefined {
 
 export function escribirCookieSesion(res: Response, token: string, expiraEn: Date, ahora: Date): void {
   const maxAge = Math.max(1, Math.floor((expiraEn.getTime() - ahora.getTime()) / 1000));
-  agregar(res, serialize(NOMBRE_COOKIE_SESION, token, { ...BASE, maxAge }));
+  agregar(res, serialize(NOMBRE_COOKIE_SESION, token, { ...base(), maxAge }));
 }
 
 export function borrarCookieSesion(res: Response): void {
-  agregar(res, serialize(NOMBRE_COOKIE_SESION, "", { ...BASE, maxAge: 0, expires: new Date(0) }));
+  agregar(res, serialize(NOMBRE_COOKIE_SESION, "", { ...base(), maxAge: 0, expires: new Date(0) }));
 }
 
 function agregar(res: Response, cookie: string): void {

@@ -21,6 +21,11 @@ describe("configuración de la API", () => {
   it("valores por omisión seguros", () => {
     expect(leerConfiguracion(base)).toEqual({
       databaseUrl: base.DATABASE_URL,
+      despliegue: "local",
+      cookieSegura: false,
+      confiarProxy: 0,
+      hsts: false,
+      dirWeb: null,
       host: "127.0.0.1",
       puerto: 3000,
       // Módulo 5: solo localhost (la cookie SameSite=Strict exige el mismo site que la API, ADR-0007).
@@ -72,5 +77,44 @@ describe("configuración de la API", () => {
   it("acepta orígenes locales explícitos", () => {
     const c = leerConfiguracion({ ...base, API_CORS_ORIGINS: "http://localhost:5173, http://127.0.0.1:4173" });
     expect(c.origenesCors).toEqual(["http://localhost:5173", "http://127.0.0.1:4173"]);
+  });
+});
+
+describe("despliegue en la nube (ADR-0025)", () => {
+  const interno = "postgresql://softarq_app:clave-secreta-de-prueba-123@postgres.railway.internal:5432/railway";
+  const nubeBase = { DATABASE_URL: interno, SOFTARQ_DESPLIEGUE: "nube", NODE_ENV: "production", API_PUBLIC_URL: "https://softarq-demo.up.railway.app", PORT: "8080" };
+
+  it("escucha en 0.0.0.0:PORT con origen https, cookie Secure, HSTS y un salto de proxy", () => {
+    const c = leerConfiguracion(nubeBase);
+    expect(c).toMatchObject({ despliegue: "nube", host: "0.0.0.0", puerto: 8080, cookieSegura: true, hsts: true, confiarProxy: 1 });
+    expect(c.origenesCors).toEqual(["https://softarq-demo.up.railway.app"]);
+    expect(c.panelUrl).toBe("https://softarq-demo.up.railway.app");
+  });
+
+  it.each([
+    ["sin NODE_ENV=production", { NODE_ENV: undefined }, /NODE_ENV=production/],
+    ["sin origen público", { API_PUBLIC_URL: undefined }, /API_PUBLIC_URL/],
+    ["origen http", { API_PUBLIC_URL: "http://softarq-demo.up.railway.app" }, /API_PUBLIC_URL/],
+    ["origen con ruta", { API_PUBLIC_URL: "https://softarq-demo.up.railway.app/app" }, /API_PUBLIC_URL/],
+    ["CORS explícito", { API_CORS_ORIGINS: "https://otro.example" }, /API_CORS_ORIGINS/],
+    ["base fuera de la red privada", { DATABASE_URL: "postgresql://softarq_app:clave-secreta-de-prueba-123@db.example.com:5432/railway" }, /red privada/],
+    ["rol administrativo", { DATABASE_URL: "postgresql://postgres:clave-secreta-de-prueba-123@postgres.railway.internal:5432/railway" }, /rol administrativo/],
+    ["host distinto de 0.0.0.0", { API_HOST: "127.0.0.1" }, /0.0.0.0/],
+  ])("rechaza: %s", (_n, cambio, patron) => {
+    expect(() => leerConfiguracion({ ...nubeBase, ...cambio })).toThrow(patron);
+  });
+
+  it("en local no admite API_PUBLIC_URL, ni hosts de red, ni NODE_ENV=production", () => {
+    expect(() => leerConfiguracion({ ...base, API_PUBLIC_URL: "https://softarq-demo.up.railway.app" })).toThrow(/API_PUBLIC_URL/);
+    expect(() => leerConfiguracion({ ...base, API_HOST: "0.0.0.0" })).toThrow(/127.0.0.1/);
+    expect(() => leerConfiguracion({ ...base, NODE_ENV: "production" })).toThrow(/NODE_ENV=production/);
+  });
+
+  it("los mensajes de error nunca incluyen la contraseña de la base", () => {
+    try {
+      leerConfiguracion({ ...nubeBase, API_PUBLIC_URL: undefined });
+    } catch (e) {
+      expect(String(e)).not.toContain("clave-secreta-de-prueba-123");
+    }
   });
 });

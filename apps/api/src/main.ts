@@ -1,6 +1,7 @@
 /**
- * Arranque de la API local: `node dist/main.js` (o `pnpm --filter @softarq/api start`).
- * Lee apps/api/.env (o SOFTARQ_ENV_FILE), valida la configuración y escucha SOLO en 127.0.0.1.
+ * Arranque de la API: `node dist/main.js` (o `pnpm --filter @softarq/api start`).
+ * Lee apps/api/.env si existe (o SOFTARQ_ENV_FILE), valida la configuración y escucha en 127.0.0.1 (local)
+ * o en 0.0.0.0:PORT detrás del proxy de la plataforma (nube, ADR-0025). Se detiene de forma ordenada con SIGTERM.
  */
 import "reflect-metadata";
 import { existsSync } from "node:fs";
@@ -17,7 +18,7 @@ async function principal(): Promise<void> {
   }
   const app = await crearAplicacion(config);
   await app.listen(config.puerto, config.host);
-  console.log(`SoftArq API (DEMO) escuchando en http://${config.host}:${config.puerto} — Ctrl+C para detener.`);
+  console.log(`SoftArq API (DEMO, ${config.despliegue}) escuchando en ${config.host}:${config.puerto} — Ctrl+C o SIGTERM para detener.`);
 }
 
 principal().catch((e: unknown) => {

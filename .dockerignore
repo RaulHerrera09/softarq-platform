@@ -1,0 +1,14 @@
+**/node_modules
+**/dist
+**/dist-e2e
+.git
+_work
+graphify-out
+.claude
+.agents
+**/.env
+**/.env.*
+!**/.env.example
+docs
+*.md
+apps/mobile/android

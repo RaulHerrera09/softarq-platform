@@ -25,11 +25,14 @@ export const DIR_WORK = join(RAIZ_PROYECTO, "_work");
 export const DIR_RESPALDOS_POR_OMISION = join(RAIZ_PROYECTO, "respaldos", "softarq_dev");
 /** Carpeta de documentos del destino de prueba de restauración (desechable, en _work). */
 export const DIR_DOCUMENTOS_RESTAURACION_POR_OMISION = join(DIR_WORK, "restauracion", "softarq_restauracion", "documentos");
-/** SOFTARQ_PG_BIN, o el primer `bin` de PostgreSQL 18 que exista (instalación estándar; luego el equipo original). */
+/** Extensión de los ejecutables de PostgreSQL: .exe en Windows, ninguna en Linux (entorno en línea). */
+export const EXT = process.platform === "win32" ? ".exe" : "";
+/** SOFTARQ_PG_BIN, o el primer `bin` de PostgreSQL 18 que exista (Windows: instalación estándar y equipo original; Linux: paquete postgresql-client-18). */
 export const PG_BIN =
   process.env.SOFTARQ_PG_BIN ??
-  [join(process.env.ProgramFiles ?? "C:\\Program Files", "PostgreSQL", "18", "bin"), "D:\\Postgres18\\bin"].find((d) => existsSync(join(d, "psql.exe"))) ??
-  "D:\\Postgres18\\bin";
+  (process.platform === "win32"
+    ? [join(process.env.ProgramFiles ?? "C:\\Program Files", "PostgreSQL", "18", "bin"), "D:\\Postgres18\\bin"].find((d) => existsSync(join(d, `psql${EXT}`))) ?? "D:\\Postgres18\\bin"
+    : "/usr/lib/postgresql/18/bin");
 
 export const BASE_ORIGEN = "softarq_dev";
 /** Única base que acepta la restauración de prueba. */
@@ -207,7 +210,7 @@ export function conArchivoDeContrasena(conexion, fn) {
 
 /** Ejecuta una herramienta de PostgreSQL sin shell. Lanza con stderr (que no contiene contraseñas: van por PGPASSFILE). */
 export function herramientaPg(nombre, args, entorno) {
-  const exe = join(PG_BIN, `${nombre}.exe`);
+  const exe = join(PG_BIN, `${nombre}${EXT}`);
   if (!existsSync(exe)) throw new ErrorRespaldo(`No se encontró ${exe} (ajuste SOFTARQ_PG_BIN).`);
   const r = spawnSync(exe, args, { env: entorno, encoding: "utf8", windowsHide: true, maxBuffer: 64 * 1024 * 1024 });
   if (r.error) throw new ErrorRespaldo(`${nombre} no pudo ejecutarse: ${r.error.message}`);
@@ -216,7 +219,7 @@ export function herramientaPg(nombre, args, entorno) {
 }
 
 export function versionHerramienta(nombre) {
-  const r = spawnSync(join(PG_BIN, `${nombre}.exe`), ["--version"], { encoding: "utf8", windowsHide: true });
+  const r = spawnSync(join(PG_BIN, `${nombre}${EXT}`), ["--version"], { encoding: "utf8", windowsHide: true });
   return r.status === 0 ? r.stdout.trim() : null;
 }
 

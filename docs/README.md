@@ -31,5 +31,8 @@
 | [`web/guia-prueba-manual.md`](web/guia-prueba-manual.md) | Guía para probar la web en persona (distinta de las pruebas automatizadas). |
 | [`herramientas/skills.md`](herramientas/skills.md) | Skills de Claude Code y Codex: fuentes, versiones, activación, adaptaciones y comprobaciones. |
 | [`herramientas/graphify.md`](herramientas/graphify.md) | Grafo de código local (Graphify 0.8.5, solo AST): alcance, exclusiones, comandos, vigencia, hooks, comprobaciones y limitaciones. |
+| [`adr/0024-respaldo-cifrado-vigenere.md`](adr/0024-respaldo-cifrado-vigenere.md) | Respaldo cifrado con Vigenère sobre bytes (requisito académico): formato, clave aparte, verificación por SHA-256 y límites. |
+| [`adr/0025-despliegue-en-linea-railway.md`](adr/0025-despliegue-en-linea-railway.md) | Despliegue en línea: un servicio (API + panel) y PostgreSQL privado, presupuesto Hobby, modo `nube` estricto, respaldos AES-256-GCM y APK interna. |
+| [`operacion/despliegue-railway.md`](operacion/despliegue-railway.md) | Procedimiento de despliegue, actualización, respaldo y parada. |
 
 La especificación funcional completa sigue siendo el Word maestro v1.3 de la fase 1 (fuera del repositorio). Aquí se enlaza por sección; no se copia.

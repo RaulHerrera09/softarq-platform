@@ -36,7 +36,12 @@
     "start": "node dist/main.js",
     "openapi:generar": "pnpm run build && node dist/http/generar-openapi.js",
     "build:e2e": "pnpm run prisma:generar && tsc -p tsconfig.e2e.json",
-    "e2e:servidor": "node dist-e2e/pruebas-e2e/servidor-e2e.js"
+    "e2e:servidor": "node dist-e2e/pruebas-e2e/servidor-e2e.js",
+    "db:migrar:nube": "node scripts/db/migrar-nube.mjs",
+    "db:aprovisionar:nube": "node scripts/db/aprovisionar-nube.mjs",
+    "respaldo:aead-clave": "node scripts/respaldo/cifrar-aead.mjs clave",
+    "respaldo:cifrar-aead": "node scripts/respaldo/cifrar-aead.mjs cifrar",
+    "respaldo:descifrar-aead": "node scripts/respaldo/cifrar-aead.mjs descifrar"
   },
   "dependencies": {
     "@nestjs/common": "12.1.2",

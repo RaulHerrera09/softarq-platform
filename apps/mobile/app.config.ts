@@ -12,6 +12,16 @@
  */
 import type { ExpoConfig } from "expo/config";
 
+// Perfil «interna» (APK de distribución interna conectada al entorno en línea, ADR-0025): la compilación se
+// detiene si no hay una URL https pública; así nunca sale un APK apuntando a localhost.
+if (process.env["EAS_BUILD_PROFILE"] === "interna") {
+  const url = process.env["EXPO_PUBLIC_API_URL"] ?? "";
+  const u = URL.canParse(url) ? new URL(url) : null;
+  if (!u || u.protocol !== "https:" || u.port !== "" || u.pathname !== "/" || !u.hostname.includes(".") || url.endsWith("/")) {
+    throw new Error("El perfil «interna» exige EXPO_PUBLIC_API_URL con el origen https público de la API (sin ruta ni puerto).");
+  }
+}
+
 const config: ExpoConfig = {
   name: "SoftArq DEMO",
   slug: "softarq-demo",

@@ -24,10 +24,12 @@ import {
 import { APP_FILTER, APP_GUARD, NestFactory, Reflector } from "@nestjs/core";
 import type { NestExpressApplication } from "@nestjs/platform-express";
 import { ThrottlerGuard, ThrottlerModule } from "@nestjs/throttler";
+import { sep } from "node:path";
 import helmet from "helmet";
 import { CABECERA_CSRF, CABECERA_IDEMPOTENCIA, CABECERA_IDEMPOTENCIA_REPRODUCIDA } from "@softarq/contracts";
 import { z } from "zod";
 import type { ConfiguracionApi } from "../config/entorno.js";
+import { configurarCookieSegura } from "./cookies.js";
 import { RepositorioCatalogos } from "../modules/catalogos/persistencia/repositorio-catalogos.js";
 import { RelojDelSistema, type Reloj } from "../modules/calculo/aplicacion/reloj.js";
 import { LimitadorAccesos } from "../modules/autenticacion/aplicacion/limitador-accesos.js";
@@ -351,10 +353,12 @@ export async function crearAplicacion(
     abortOnError: false,
   });
 
-  app.set("trust proxy", false); // no se confía en X-Forwarded-For
+  // Local: sin trust proxy. Nube: un salto (el proxy de la plataforma) para que req.ip sea la del cliente (ADR-0025).
+  app.set("trust proxy", config.confiarProxy);
+  configurarCookieSegura(config.cookieSegura);
   app.disable("x-powered-by");
   app.set("query parser", "simple");
-  app.use(helmet({ hsts: false })); // HTTP local: HSTS no aplica
+  app.use(helmet({ hsts: config.hsts ? { maxAge: 15_552_000, includeSubDomains: false } : false })); // HSTS solo con HTTPS
   app.enableCors({
     origin: (origen, cb) => cb(null, origen !== undefined && config.origenesCors.includes(origen)),
     methods: ["GET", "POST", "PUT", "PATCH", "DELETE"],
@@ -365,6 +369,15 @@ export async function crearAplicacion(
     maxAge: 600,
   });
   app.setGlobalPrefix("api/v1", { exclude: [{ path: "health", method: RequestMethod.GET }] });
+  // Panel compilado en el mismo origen (ADR-0025). Los recursos con hash son inmutables; index.html no se cachea.
+  if (config.dirWeb) {
+    app.useStaticAssets(config.dirWeb, {
+      index: "index.html",
+      setHeaders: (res, ruta) => {
+        res.setHeader("Cache-Control", ruta.includes(`${sep}assets${sep}`) ? "public, max-age=31536000, immutable" : "no-cache");
+      },
+    });
+  }
   app.useGlobalPipes(new StandardSchemaValidationPipe({ exceptionFactory: errorDeValidacion }));
   app.enableShutdownHooks();
   return app;
