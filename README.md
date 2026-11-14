@@ -41,6 +41,8 @@ Cada función ve solo sus secciones:
 - **Clientes y Proyectos**, con clasificación y filtros.
 - **Catálogo:** proveedores, productos, precios con vigencia, mano de obra, insumos, conversiones, conceptos, componentes, tipos de estructura, trabajos para clientes y precios de referencia de la estimación.
 - **Administración:** parámetros (recargo, impuesto, vigencia, textos), personas y funciones, y emisor del documento.
+- **Mi cuenta:** cada persona cambia su propia contraseña (el servidor guarda solo el hash Argon2id).
+- **Vista de presentación:** las listas, la bandeja y los contadores muestran por omisión los ejemplos de presentación; la opción «Todo el historial» (o la clasificación elegida) amplía el alcance sin ocultar nada en el servidor.
 - **Exportaciones:** exportación de 15 tablas y manifiesto en CSV (no es una migración completa; la recuperación completa es el respaldo).
 
 ![Bandeja de solicitudes del panel](docs/imagenes/panel-bandeja-solicitudes.jpg)
@@ -65,27 +67,34 @@ Los PDF comerciales nunca incluyen costos, proveedores, consumos, recargo, marge
 
 ```mermaid
 flowchart TB
-  subgraph Clientes
-    WEB["Panel del equipo<br/>React 19 + Vite 8"]
-    APP["App del cliente<br/>Expo SDK 58 (Android)"]
+  subgraph Dispositivos
+    APK["App Android (APK autónoma)<br/>Expo SDK 58"]
+    NAV["Navegador<br/>panel del equipo"]
+  end
+  EAS["EAS (Expo)<br/>compila y distribuye la APK"]
+  subgraph Railway["Railway · proyecto en producción"]
+    SRV["Servicio softarq<br/>API NestJS 12 + panel React/Vite compilado<br/>mismo origen https"]
+    VOL[("Volumen<br/>PDF emitidos")]
+    PG[("PostgreSQL 18<br/>red privada, sin acceso público")]
+    VPG[("Volumen de la base")]
   end
   CON["@softarq/contracts<br/>tipos y esquemas Zod, sin lógica"]
-  API["API NestJS 12<br/>cálculo, permisos y reglas de negocio"]
-  DB[("PostgreSQL 18<br/>Prisma 7.10")]
-  DOC[("Carpeta persistente<br/>de PDF emitidos")]
-  WEB --> API
-  APP --> API
-  WEB -. importa .-> CON
-  APP -. importa .-> CON
-  API -. importa .-> CON
-  API --> DB
-  API --> DOC
+  EAS -. distribuye .-> APK
+  APK -- HTTPS --> SRV
+  NAV -- HTTPS --> SRV
+  SRV --> VOL
+  SRV -- red privada --> PG
+  PG --> VPG
+  APK -. importa .-> CON
+  NAV -. importa .-> CON
+  SRV -. importa .-> CON
 ```
 
 - **La API es la única fuente de cálculos, permisos y reglas de negocio.** Web y app solo capturan y muestran.
 - La web usa sesión por cookie `HttpOnly` con protección CSRF; la app usa una sesión de tipo móvil por `Authorization: Bearer`, solo en rutas habilitadas para ella.
 - Los importes viajan como cadenas decimales y se calculan con `decimal.js`; el redondeo a centavos es mitad hacia arriba. Moneda única: MXN.
-- Los PDF emitidos se guardan en una carpeta persistente fuera del repositorio; la base conserva su tamaño y SHA-256.
+- Los PDF emitidos se guardan en una carpeta persistente fuera del repositorio (en línea, un volumen del servicio); la base conserva su tamaño y SHA-256.
+- En línea, la API y el panel compilado salen del mismo servicio y origen https: cookie `Secure`, HSTS y un único origen permitido. PostgreSQL solo se alcanza por la red privada, con roles de mínimo privilegio. La app Android usa la misma API y la misma base que el panel.
 
 ## Stack
 
@@ -170,7 +179,28 @@ El mismo código corre en Railway (API y panel en un servicio, PostgreSQL por re
 
 - **Panel del equipo:** https://softarq-production.up.railway.app
 - **App Android (APK de distribución interna, sin Metro ni cable):** [página de la compilación](https://expo.dev/accounts/raulherrera09/projects/softarq-demo/builds/670bc4bc-1f71-4c2b-a657-537bc84337e7) · [descarga directa del APK](https://expo.dev/artifacts/eas/YTeeCk-i2II_ctPN7pfyNnkaaxnbCmwSyx_jrTKX2so.apk). Es la compilación de la versión 0.1.0; Expo conserva los artefactos por tiempo limitado. Al instalarla, Android pedirá permitir la instalación de orígenes desconocidos.
-- Las cuentas de la demostración no se publican; las entrega el propietario. Despliegue, actualización, respaldo y parada: [guía de despliegue](docs/operacion/despliegue-railway.md).
+- **Cuentas:** las de la demostración no se publican; las entrega el propietario. Cada persona elige su contraseña en «Mi cuenta → Cambiar contraseña».
+
+### Recorrido de presentación
+
+1. **Cliente (app):** el Profesor crea su obra, elige el trabajo, escribe las medidas, ve la estimación preliminar y envía la solicitud.
+2. **Equipo (panel):** un Preparador la atiende desde «Solicitudes» (el botón «Actualizar» recarga la bandeja), elige los precios, calcula y envía a revisión.
+3. **Revisión:** un Revisor distinto aprueba; el Preparador (u otra persona permitida) emite el PDF.
+4. **Cliente:** el Profesor ve su cotización emitida en la app y descarga el PDF; cada solicitud se conserva y se sigue por separado.
+
+La vista inicial del panel muestra los ejemplos de presentación (dos por tipo de trabajo); «Todo el historial» abre el resto.
+
+### Comandos del entorno en línea
+
+Distintos de los locales (requieren la CLI de Railway con `railway login` y el proyecto enlazado). Detalle, límites de gasto, respaldo y parada en la [guía de despliegue](docs/operacion/despliegue-railway.md).
+
+```powershell
+railway usage                                   # consumo del ciclo y límites
+railway up --service softarq --ci               # compilar la imagen y desplegar (no hay despliegue automático)
+railway redeploy --service softarq -y           # reiniciar sin recompilar
+node scripts/nube/recorrido-nube.mjs https://<dominio>     # recorrido completo con cuentas QA
+node scripts/nube/respaldar-nube.mjs            # respaldo cifrado (AES-256-GCM) de la nube hasta la laptop, verificado
+```
 
 ## Configuración
 
@@ -237,7 +267,17 @@ pnpm --filter @softarq/api respaldo:descifrar <carpeta cifrada>
 pnpm --filter @softarq/api respaldo:probar-cifrado               # prueba completa de cifrado y restauración
 ```
 
-Detalle y límites: [guía de respaldo](docs/operacion/respaldo-y-restauracion.md) y [ADR-0024](docs/adr/0024-respaldo-cifrado-vigenere.md).
+### AES-256-GCM (respaldos de la nube)
+
+Los respaldos del entorno en línea se cifran con **AES-256-GCM** por bloques de 1 MiB, un cifrado autenticado moderno distinto de Vigenère y con su propia clave (`SOFTARQ_RESPALDO_CLAVE_AEAD`, guardada aparte): detecta alteración, truncado, bloques quitados y clave incorrecta. El servicio hace el respaldo coherente dentro de su red privada y la laptop lo recupera y lo verifica; la restauración se prueba solo en una base aislada.
+
+```powershell
+pnpm --filter @softarq/api respaldo:aead-clave                 # clave nueva (guárdela en un gestor de secretos)
+pnpm --filter @softarq/api respaldo:cifrar-aead <carpeta>      # AES-256-GCM de un respaldo local verificado
+pnpm --filter @softarq/api respaldo:descifrar-aead <carpeta>   # descifra y verifica por SHA-256
+```
+
+Detalle y límites: [guía de respaldo](docs/operacion/respaldo-y-restauracion.md), [ADR-0024](docs/adr/0024-respaldo-cifrado-vigenere.md) y [ADR-0025](docs/adr/0025-despliegue-en-linea-railway.md).
 
 ## Documentación técnica
 
@@ -249,6 +289,7 @@ Detalle y límites: [guía de respaldo](docs/operacion/respaldo-y-restauracion.m
 | Modelo de datos y permisos | [`docs/modelo-conceptual.md`](docs/modelo-conceptual.md) |
 | Cobertura frente a la fase 1 | [`docs/cobertura-demo.md`](docs/cobertura-demo.md) |
 | Preparar la base de datos | [`apps/api/README.md`](apps/api/README.md) |
+| Despliegue en línea, gasto, respaldo y parada | [`docs/operacion/despliegue-railway.md`](docs/operacion/despliegue-railway.md), [ADR-0025](docs/adr/0025-despliegue-en-linea-railway.md) |
 | Panel web y sistema visual | [`apps/web/README.md`](apps/web/README.md), [`docs/web/sistema-visual.md`](docs/web/sistema-visual.md) |
 | App del cliente | [`docs/movil/guia-instalacion-y-pruebas.md`](docs/movil/guia-instalacion-y-pruebas.md), [`docs/movil/api-del-cliente.md`](docs/movil/api-del-cliente.md) |
 | Decisiones de arquitectura | [`docs/adr/`](docs/adr/) (monorepo, cálculo, sesiones, versiones, emisión, respaldo, app del cliente, identidad visual) |
