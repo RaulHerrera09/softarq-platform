@@ -11,6 +11,8 @@ import type { ReactNode } from "react";
 import type { ServiciosCotizaciones } from "../api/servicios-cotizaciones.ts";
 import { Pagina } from "../comunes/pagina.tsx";
 import { ContadoresInicio } from "./ContadoresInicio.tsx";
+import { useAmbito } from "../comunes/ambito.tsx";
+import { FiltroClasificacionCampo } from "../comunes/clasificacion.tsx";
 import { useCarga } from "../comunes/usarCarga.ts";
 import { Enlace, type Ruta } from "../navegacion/ruta.tsx";
 import type { ServiciosSolicitudes } from "../solicitudes/servicios.ts";
@@ -29,7 +31,8 @@ function Tarjeta({ titulo, numero, ayuda, a, accion, cargando, fallo }: { titulo
 }
 
 function PorAtender({ servicios }: { servicios: ServiciosSolicitudes }) {
-  const { estado } = useCarga((s) => servicios.listar(["ENVIADA"], s), []);
+  const { ambito } = useAmbito();
+  const { estado } = useCarga((s) => servicios.listar(["ENVIADA"], s, ambito), [ambito]);
   return (
     <Tarjeta
       titulo="Solicitudes por atender"
@@ -85,6 +88,7 @@ function Atajo({ titulo, texto, a, accion }: { titulo: string; texto: string; a:
 
 export function MiTrabajo({ nombre, capacidades, solicitudes, cotizaciones }: { nombre: string; capacidades: readonly Capacidad[]; solicitudes: ServiciosSolicitudes; cotizaciones: ServiciosCotizaciones }) {
   const puede = (c: Capacidad) => capacidades.includes(c);
+  const { ambito, setAmbito } = useAmbito();
   const tarjetas: ReactNode[] = [];
   if (puede("solicitudes.atender")) tarjetas.push(<PorAtender key="sol" servicios={solicitudes} />);
   if (puede("cotizaciones.preparar")) tarjetas.push(<Atajo key="cot" titulo="Mis cotizaciones" texto="Preparar, confirmar precios, calcular y enviar a revisión." a={{ pantalla: "cotizaciones" }} accion="Abrir las cotizaciones" />);
@@ -94,7 +98,12 @@ export function MiTrabajo({ nombre, capacidades, solicitudes, cotizaciones }: { 
   return (
     <Pagina titulo="Mi trabajo" subtitulo={`${nombre}: lo que tiene por hacer según su función. El resto del panel sigue disponible en la navegación.`}>
       {tarjetas.length === 0 ? <p className="vacio">Su función no tiene bandejas propias. Use la navegación para consultar cotizaciones, clientes y proyectos.</p> : <div className="tarjetas">{tarjetas}</div>}
-      {puede("cotizaciones.consultar") ? <ContadoresInicio servicios={cotizaciones} /> : null}
+      {puede("cotizaciones.consultar") ? (
+        <>
+          <FiltroClasificacionCampo valor={ambito} alCambiar={setAmbito} id="alcance-vista" etiqueta="Qué se muestra en las listas, la bandeja y los contadores" />
+          <ContadoresInicio servicios={cotizaciones} />
+        </>
+      ) : null}
     </Pagina>
   );
 }

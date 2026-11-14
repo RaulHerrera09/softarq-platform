@@ -8,6 +8,7 @@ import { Aviso, Boton, Encabezado, Esqueleto } from "../comunes/componentes.tsx"
 import { BarraSesion } from "./BarraSesion.tsx";
 import { PantallaAcceso } from "./PantallaAcceso.tsx";
 import { PantallaCambioContrasena } from "./PantallaCambioContrasena.tsx";
+import { ProveedorAmbito } from "../comunes/ambito.tsx";
 import { useSesion } from "./ProveedorSesion.tsx";
 
 export const MOTIVO_REVISOR =
@@ -23,8 +24,8 @@ export function Raiz() {
   if (estado.fase === "autenticado" && !restringida) {
     const puedeCalcular = estado.sesion.capacidades.includes("calculo.ejecutar");
     return (
+      <ProveedorAmbito key={estado.generacion}>
       <Aplicacion
-        key={estado.generacion}
         sesion={estado.sesion}
         servicios={servicios}
         cotizaciones={cotizaciones}
@@ -35,6 +36,7 @@ export function Raiz() {
         alRefrescarSesion={refrescar}
         motivoSinCalculo={puedeCalcular ? null : estado.sesion.funciones.includes("REVISOR") ? MOTIVO_REVISOR : "Su función no incluye calcular."}
       />
+      </ProveedorAmbito>
     );
   }
 

@@ -46,12 +46,15 @@ import {
  * Nunca lanza después de crear la carpeta: un fallo deja <ID>.INCOMPLETO con su motivo.
  */
 export async function crearRespaldo(opciones = {}) {
-  const dirDocsDesarrollo = dirDocumentosDesarrollo();
+  const dirDocsDesarrollo = opciones.dirDocumentos ?? dirDocumentosDesarrollo();
   const dirDocumentos = opciones.dirDocumentos ?? process.env.SOFTARQ_DIR_DOCUMENTOS_ORIGEN ?? dirDocsDesarrollo;
   const dirRespaldos = validarCarpetaRespaldos(opciones.dirRespaldos ?? process.env.SOFTARQ_DIR_RESPALDOS ?? DIR_RESPALDOS_POR_OMISION, {
     dirDocumentosDesarrollo: dirDocsDesarrollo,
   });
-  const conexion = urlRespaldo();
+  // `opciones.conexion` (entorno en línea, ADR-0025): rol y base distintos de los locales, con la misma coherencia.
+  const conexion = opciones.conexion ?? urlRespaldo();
+  const baseEsperada = opciones.baseEsperada ?? BASE_ORIGEN;
+  const rolEsperado = opciones.rolEsperado ?? "softarq_respaldo";
   if (!existsSync(dirDocumentos)) throw new ErrorRespaldo(`No existe la carpeta de documentos de origen: ${dirDocumentos}`);
 
   const id = nuevoIdentificador();
@@ -69,7 +72,7 @@ export async function crearRespaldo(opciones = {}) {
     creadoEn: inicio.toISOString(),
     estado: "INCOMPLETO",
     problemas,
-    origen: { base: BASE_ORIGEN, rol: conexion.usuario, servidor: null, pgDump: versionHerramienta("pg_dump"), carpetaDocumentos: dirDocumentos },
+    origen: { base: baseEsperada, rol: conexion.usuario, servidor: null, pgDump: versionHerramienta("pg_dump"), carpetaDocumentos: dirDocumentos },
     aplicacion: estadoGit(),
     esquema: { ultimaMigracion: null, migraciones: [] },
     base: { archivo: "base.dump", formato: "custom (pg_dump -Fc)", instantanea: null, bytes: null, sha256: null },
@@ -85,7 +88,7 @@ export async function crearRespaldo(opciones = {}) {
     try {
       await cliente.query("BEGIN ISOLATION LEVEL REPEATABLE READ READ ONLY");
       const { rows: [inst] } = await cliente.query("SELECT pg_export_snapshot() AS id, current_database() AS base, current_user AS rol, version() AS version");
-      if (inst.base !== BASE_ORIGEN || inst.rol !== "softarq_respaldo") throw new ErrorRespaldo("La conexión no es softarq_respaldo → softarq_dev.");
+      if (inst.base !== baseEsperada || inst.rol !== rolEsperado) throw new ErrorRespaldo(`La conexión no es ${rolEsperado} → ${baseEsperada}.`);
       manifiesto.origen.servidor = inst.version;
       manifiesto.base.instantanea = "pg_export_snapshot (REPEATABLE READ, solo lectura)";
       // Punto de sincronización de la prueba operativa: una escritura posterior debe quedar fuera

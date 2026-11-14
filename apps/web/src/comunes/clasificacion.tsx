@@ -15,17 +15,17 @@ export function EtiquetaClasificacion({ valor }: { valor: Clasificacion | null |
 }
 
 const OPCIONES: { valor: FiltroClasificacion | ""; texto: string }[] = [
-  { valor: "", texto: "Todas" },
+  { valor: "", texto: "Todo el historial" },
   { valor: "PRESENTACION", texto: "Presentación" },
   { valor: "QA", texto: "QA" },
   { valor: "HUMO", texto: "Humo" },
   { valor: "SIN_CLASIFICAR", texto: "Sin clasificar" },
 ];
 
-export function FiltroClasificacionCampo({ valor, alCambiar, id = "filtro-clasificacion" }: { valor: FiltroClasificacion | undefined; alCambiar: (v: FiltroClasificacion | undefined) => void; id?: string }) {
+export function FiltroClasificacionCampo({ valor, alCambiar, id = "filtro-clasificacion", etiqueta = "Clasificación" }: { valor: FiltroClasificacion | undefined; alCambiar: (v: FiltroClasificacion | undefined) => void; id?: string; etiqueta?: string }) {
   return (
     <div className="campo campo-filtro">
-      <label htmlFor={id}>Clasificación</label>
+      <label htmlFor={id}>{etiqueta}</label>
       <select id={id} value={valor ?? ""} onChange={(e) => alCambiar(e.target.value === "" ? undefined : (e.target.value as FiltroClasificacion))}>
         {OPCIONES.map((o) => (
           <option key={o.valor || "todas"} value={o.valor}>

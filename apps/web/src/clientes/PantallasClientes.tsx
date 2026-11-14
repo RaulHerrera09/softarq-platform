@@ -10,6 +10,8 @@ import type { ServiciosSolicitudes } from "../solicitudes/servicios.ts";
 import { useState, type FormEvent } from "react";
 import type { Cliente, FiltroClasificacion, Proyecto } from "@softarq/contracts";
 import { EtiquetaClasificacion, FiltroClasificacionCampo } from "../comunes/clasificacion.tsx";
+import { useAmbito } from "../comunes/ambito.tsx";
+
 import { mensajeDeFallo, type FalloApi } from "../api/cliente.ts";
 import type { ServiciosCotizaciones } from "../api/servicios-cotizaciones.ts";
 import { Aviso, Boton, Codigo } from "../comunes/componentes.tsx";
@@ -57,7 +59,7 @@ export function ListaClientes({ servicios, puedeGestionar }: { servicios: Servic
   const { navegar } = useRuta();
   const [buscar, setBuscar] = useState("");
   const [inactivos, setInactivos] = useState(false);
-  const [clasificacion, setClasificacion] = useState<FiltroClasificacion | undefined>(undefined);
+  const { ambito: clasificacion, setAmbito: setClasificacion } = useAmbito();
   const [creando, setCreando] = useState(false);
   const intenciones = useIntenciones();
   const { estado, recargar } = useCarga((s) => servicios.listarClientes({ buscar, incluirInactivos: inactivos, ...(clasificacion ? { clasificacion } : {}) }, s), [buscar, inactivos, clasificacion]);

@@ -13,6 +13,7 @@ export type Ruta =
   | { pantalla: "inicio" }
   | { pantalla: "solicitudes" }
   | { pantalla: "exportaciones" }
+  | { pantalla: "cuenta" }
   | { pantalla: "solicitud"; id: string }
   | { pantalla: "calculadora" }
   | { pantalla: "cotizaciones" }
@@ -56,6 +57,7 @@ export function interpretarHash(hash: string): Ruta | null {
   if (camino === "/inicio") return { pantalla: "inicio" };
   if (camino === "/solicitudes") return { pantalla: "solicitudes" };
   if (camino === "/exportaciones") return { pantalla: "exportaciones" };
+  if (camino === "/cuenta") return { pantalla: "cuenta" };
   if ((m = new RegExp(`^/solicitudes/(${UUID})$`).exec(camino))) return { pantalla: "solicitud", id: m[1]! };
   if (camino === "/calculadora") return { pantalla: "calculadora" };
   if (camino === "/cotizaciones") return { pantalla: "cotizaciones" };
@@ -99,6 +101,8 @@ export function hashDe(r: Ruta): string {
       return "#/solicitudes";
     case "exportaciones":
       return "#/exportaciones";
+    case "cuenta":
+      return "#/cuenta";
     case "solicitud":
       return `#/solicitudes/${r.id}`;
     case "calculadora":
@@ -137,7 +141,7 @@ export function hashDe(r: Ruta): string {
 }
 
 /** Sección de la navegación principal a la que pertenece una ruta. */
-export function seccionDe(r: Ruta): "inicio" | "solicitudes" | "exportaciones" | "calculadora" | "cotizaciones" | "revisiones" | "clientes" | "proyectos" | "emisor" | "catalogo" | "administracion" | null {
+export function seccionDe(r: Ruta): "inicio" | "solicitudes" | "exportaciones" | "cuenta" | "calculadora" | "cotizaciones" | "revisiones" | "clientes" | "proyectos" | "emisor" | "catalogo" | "administracion" | null {
   switch (r.pantalla) {
     case "inicio":
       return "inicio";
@@ -146,6 +150,8 @@ export function seccionDe(r: Ruta): "inicio" | "solicitudes" | "exportaciones" |
       return "solicitudes";
     case "exportaciones":
       return "exportaciones";
+    case "cuenta":
+      return "cuenta";
     case "calculadora":
       return "calculadora";
     case "cotizaciones":

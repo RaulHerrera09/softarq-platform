@@ -33,6 +33,8 @@ import {
   CABECERA_IDEMPOTENCIA_REPRODUCIDA,
   EsquemaConsultaClientes,
   EsquemaConsultaCotizaciones,
+  EsquemaConsultaContadores,
+  type ConsultaContadores,
   EsquemaConsultaProyectos,
   EsquemaAnulacionAprobacion,
   EsquemaConsultaRevisiones,
@@ -265,11 +267,11 @@ export class CotizacionesController {
     return this.servicio.listar(organizacionDe(req), c);
   }
 
-  /** Contadores de la hoja «00 INICIO» (ADR-0023): la organización completa, con las reglas que aplican. Solo lectura. */
+  /** Contadores de la hoja «00 INICIO» (ADR-0023): la organización completa o, con `clasificacion`, solo esa vista. Solo lectura. */
   @Get("contadores")
   @Requiere("cotizaciones.consultar")
-  contadores(@Req() req: Request): Promise<ContadoresInicio> {
-    return this.servicio.contadoresInicio(organizacionDe(req));
+  contadores(@Req() req: Request, @Query({ schema: EsquemaConsultaContadores }) c: ConsultaContadores): Promise<ContadoresInicio> {
+    return this.servicio.contadoresInicio(organizacionDe(req), c.clasificacion);
   }
 
   @Get(":id")

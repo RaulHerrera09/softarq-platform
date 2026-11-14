@@ -5,6 +5,8 @@
 import { useEffect, useState, type FormEvent } from "react";
 import type { CapturaBorrador, Cliente, FiltroClasificacion, Proyecto } from "@softarq/contracts";
 import { EtiquetaClasificacion, FiltroClasificacionCampo } from "../comunes/clasificacion.tsx";
+import { useAmbito } from "../comunes/ambito.tsx";
+
 import { mensajeDeFallo, type FalloApi } from "../api/cliente.ts";
 import type { ServiciosCotizaciones } from "../api/servicios-cotizaciones.ts";
 import { Detalle, Resumen } from "../calculo/PanelResultado.tsx";
@@ -24,7 +26,7 @@ import { PanelRespuesta } from "./respuestas.tsx";
 export function ListaCotizaciones({ servicios, puedePreparar }: { servicios: ServiciosCotizaciones; puedePreparar: boolean }) {
   const [texto, setTexto] = useState("");
   const [buscar, setBuscar] = useState("");
-  const [clasificacion, setClasificacion] = useState<FiltroClasificacion | undefined>(undefined);
+  const { ambito: clasificacion, setAmbito: setClasificacion } = useAmbito();
   const { estado, recargar } = useCarga((s) => servicios.listarCotizaciones({ buscar, ...(clasificacion ? { clasificacion } : {}) }, s), [buscar, clasificacion]);
   const enviar = (e: FormEvent) => {
     e.preventDefault();

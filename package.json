@@ -20,5 +20,8 @@
     "grafo:estado": "node scripts/grafo/grafo.mjs estado",
     "grafo:archivos": "node scripts/grafo/grafo.mjs archivos",
     "grafo:instalar-hooks": "node scripts/grafo/grafo.mjs instalar-hooks"
+  },
+  "devDependencies": {
+    "railway": "^3.17.0"
   }
 }

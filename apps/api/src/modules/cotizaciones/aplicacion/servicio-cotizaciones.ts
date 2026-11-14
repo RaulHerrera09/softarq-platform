@@ -128,12 +128,13 @@ export class ServicioCotizaciones {
   }
 
   /**
-   * Contadores de la hoja «00 INICIO» (ADR-0023). Cuentan la organización completa con las reglas de `REGLAS_CONTADORES`; no
+   * Contadores de la hoja «00 INICIO» (ADR-0023). Cuentan la organización completa (o la clasificación pedida) con las reglas de `REGLAS_CONTADORES`; no
    * dependen de quién consulta (cualquiera con `cotizaciones.consultar`) y no modifican nada.
    */
-  async contadoresInicio(ctx: ContextoOrganizacion): Promise<ContadoresInicio> {
+  async contadoresInicio(ctx: ContextoOrganizacion, clasificacion?: ConsultaCotizaciones["clasificacion"]): Promise<ContadoresInicio> {
     const hoy = this.reloj.hoy();
-    const todas = await this.repo.listarCotizaciones(ctx, { limite: 100_000 });
+    // Con `clasificacion`, los contadores y el último folio corresponden SOLO a ese alcance (vista de presentación).
+    const todas = await this.repo.listarCotizaciones(ctx, { limite: 100_000, ...(clasificacion !== undefined ? { clasificacion } : {}) });
     const activas = todas.filter((q) => q.estadoFolio === "ACTIVO");
     const estado = (q: (typeof activas)[number]) => q.ultimaVersion?.estado ?? "BORRADOR";
     const emitidas = activas.filter((q) => estado(q) === "EMITIDA");

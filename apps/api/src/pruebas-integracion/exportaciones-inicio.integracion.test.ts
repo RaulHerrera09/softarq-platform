@@ -217,6 +217,12 @@ describe("contadores de 00 INICIO", () => {
     const c = EsquemaContadoresInicio.parse((await p.get("/api/v1/cotizaciones/contadores")).cuerpo);
     expect(c.borradores).toBe(1);
     expect(c.ultimoFolio).toBe(q.cuerpo.cotizacion.folio);
+    // Vista de presentación: los contadores y el último folio corresponden SOLO a la clasificación pedida.
+    const presentacion = EsquemaContadoresInicio.parse((await p.get("/api/v1/cotizaciones/contadores?clasificacion=PRESENTACION")).cuerpo);
+    expect(presentacion).toMatchObject({ borradores: 0, ultimoFolio: null });
+    const sinClasificar = EsquemaContadoresInicio.parse((await p.get("/api/v1/cotizaciones/contadores?clasificacion=SIN_CLASIFICAR")).cuerpo);
+    expect(sinClasificar.borradores).toBe(1);
+    expect((await p.get("/api/v1/cotizaciones/contadores?clasificacion=DESECHABLE")).status).toBe(400);
     const rev = await (await web(SIS)).get("/api/v1/cotizaciones/contadores");
     expect(rev.status).toBe(200);
     const ajena = EsquemaContadoresInicio.parse((await (await web(OTRA)).get("/api/v1/cotizaciones/contadores")).cuerpo);

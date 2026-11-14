@@ -2182,3 +2182,9 @@ h3,
 .campo-filtro {
   max-width: 260px;
 }
+
+/* «Mi cuenta»: el formulario de cambio de contraseña dentro del panel (no a pantalla completa). */
+.cuenta-contrasena .acceso-tarjeta {
+  margin: 0;
+  max-width: 34rem;
+}

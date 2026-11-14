@@ -9,6 +9,7 @@ import {
   EsquemaCliente,
   EsquemaConsultaClientes,
   EsquemaConsultaCotizaciones,
+  EsquemaConsultaContadores,
   EsquemaConsultaProyectos,
   EsquemaDetalleCliente,
   EsquemaDetalleCotizacion,
@@ -1255,6 +1256,7 @@ export function construirDocumentoOpenApi(): Record<string, unknown> {
       },
       "/api/v1/cotizaciones/contadores": {
         get: {
+          parameters: parametrosQuery(EsquemaConsultaContadores),
           summary: "Contadores de la hoja 00 INICIO (borradores, en revisión, aprobadas por emitir, emitidas vigentes, vencidas, precios por vencer, último folio y avisos) con las reglas que aplican. Capacidad cotizaciones.consultar",
           responses: { "200": ok("ContadoresInicio", "Contadores de la organización."), ...errores(401, 403, 429, 503, 500) },
         },

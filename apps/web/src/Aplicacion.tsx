@@ -29,6 +29,7 @@ import { ListaCotizaciones, NuevaCotizacion, VistaVersion } from "./cotizaciones
 import { BandejaRevisiones, PantallaRevision } from "./cotizaciones/revisiones.tsx";
 import { MiTrabajo } from "./inicio/MiTrabajo.tsx";
 import { PantallaExportaciones } from "./exportaciones/PantallaExportaciones.tsx";
+import { MiCuenta } from "./sesion/MiCuenta.tsx";
 import { BandejaSolicitudes, DetalleSolicitud } from "./solicitudes/PantallasSolicitudes.tsx";
 import type { ServiciosSolicitudes } from "./solicitudes/servicios.ts";
 import { PantallaSalidasInternas } from "./salidas-internas/PantallaSalidasInternas.tsx";
@@ -74,6 +75,9 @@ const SECCION_SOLICITUDES = { ruta: { pantalla: "solicitudes" } as Ruta, texto: 
 /** Con `catalogos.administrar` o `personas.administrar` (RF-26): solo ven las tablas de su función; la API decide por tabla. */
 const SECCION_EXPORTACIONES = { ruta: { pantalla: "exportaciones" } as Ruta, texto: "Exportaciones", seccion: "exportaciones" as const };
 
+/** Todas las funciones: cambio voluntario de la contraseña propia (la API exige la actual). */
+const SECCION_CUENTA = { ruta: { pantalla: "cuenta" } as Ruta, texto: "Mi cuenta", seccion: "cuenta" as const };
+
 /** Solo con `catalogos.administrar` (Administrador del catálogo); la API lo exige de todos modos. */
 const SECCION_CATALOGO = { ruta: { pantalla: "catalogo", vista: "proveedores" } as Ruta, texto: "Catálogo", seccion: "catalogo" as const };
 
@@ -86,7 +90,7 @@ function Navegacion({ ruta, puedeAtender, puedeAdministrarCatalogo, puedeAdminis
   return (
     <nav className="navegacion" aria-label="Secciones">
       <ul>
-        {[SECCIONES[0]!, ...(puedeAtender ? [SECCION_SOLICITUDES] : []), ...SECCIONES.slice(1), ...(puedeAdministrarCatalogo ? [SECCION_CATALOGO] : []), ...(puedeAdministrarSistema ? [SECCION_ADMINISTRACION] : []), ...(puedeExportar ? [SECCION_EXPORTACIONES] : [])].map((s) => (
+        {[SECCIONES[0]!, ...(puedeAtender ? [SECCION_SOLICITUDES] : []), ...SECCIONES.slice(1), ...(puedeAdministrarCatalogo ? [SECCION_CATALOGO] : []), ...(puedeAdministrarSistema ? [SECCION_ADMINISTRACION] : []), ...(puedeExportar ? [SECCION_EXPORTACIONES] : []), SECCION_CUENTA].map((s) => (
           <li key={s.seccion}>
             <Enlace a={s.ruta} className="navegacion-enlace" actual={actual === s.seccion}>
               {s.texto}
@@ -137,6 +141,8 @@ function Contenido({ sesion, servicios, cotizaciones, catalogoAdmin, administrac
         return <MiTrabajo nombre={sesion.usuario.nombre} capacidades={sesion.capacidades} solicitudes={solicitudes} cotizaciones={cotizaciones} />;
       case "solicitudes":
         return puedeAtender ? <BandejaSolicitudes servicios={solicitudes} /> : <SinPermisoSolicitudes />;
+      case "cuenta":
+        return <MiCuenta sesion={sesion} />;
       case "exportaciones":
         return puedeAdministrarCatalogo || puedeParametros || puedePersonas ? <PantallaExportaciones servicios={administracion} /> : <SinPermisoAdministracion />;
       case "solicitud":

@@ -19,7 +19,8 @@ import { parseEnv } from "node:util";
 export const RAIZ_API = resolve(dirname(fileURLToPath(import.meta.url)), "..", "..");
 export const RAIZ_REPOSITORIO = resolve(RAIZ_API, "..", "..");
 export const RAIZ_PROYECTO = resolve(RAIZ_REPOSITORIO, "..");
-export const DIR_WORK = join(RAIZ_PROYECTO, "_work");
+/** Temporales: `_work` junto al repositorio; en el entorno en línea, SOFTARQ_DIR_TRABAJO (p. ej. /tmp). */
+export const DIR_WORK = process.env.SOFTARQ_DIR_TRABAJO ?? join(RAIZ_PROYECTO, "_work");
 
 /** Carpeta dedicada de respaldos: fuera del repositorio y de _work. */
 export const DIR_RESPALDOS_POR_OMISION = join(RAIZ_PROYECTO, "respaldos", "softarq_dev");

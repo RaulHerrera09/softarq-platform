@@ -9,6 +9,8 @@
  */
 import { ROTULO_ESTIMACION, type DetalleSolicitudEquipo, type EstadoSolicitud, type FiltroClasificacion, type RenglonCliente } from "@softarq/contracts";
 import { EtiquetaClasificacion, FiltroClasificacionCampo } from "../comunes/clasificacion.tsx";
+import { useAmbito } from "../comunes/ambito.tsx";
+
 import { useState } from "react";
 import { mensajeDeFallo, type FalloApi } from "../api/cliente.ts";
 import { Aviso, Boton, Insignia } from "../comunes/componentes.tsx";
@@ -42,7 +44,7 @@ export function InsigniaEstadoSolicitud({ estado }: { estado: EstadoSolicitud })
 
 export function BandejaSolicitudes({ servicios }: { servicios: ServiciosSolicitudes }) {
   const [filtro, setFiltro] = useState(FILTROS[0]!);
-  const [clasificacion, setClasificacion] = useState<FiltroClasificacion | undefined>(undefined);
+  const { ambito: clasificacion, setAmbito: setClasificacion } = useAmbito();
   const { estado: carga, recargar } = useCarga((s) => servicios.listar(filtro.estados, s, clasificacion), [filtro.clave, clasificacion]);
   return (
     <Pagina

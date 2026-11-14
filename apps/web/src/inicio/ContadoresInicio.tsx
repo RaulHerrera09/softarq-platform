@@ -6,11 +6,14 @@
 import type { ServiciosCotizaciones } from "../api/servicios-cotizaciones.ts";
 import { Aviso, Boton } from "../comunes/componentes.tsx";
 import { formatearFecha } from "../comunes/formato.ts";
+import { useAmbito } from "../comunes/ambito.tsx";
+import { TEXTO_CLASIFICACION } from "../comunes/clasificacion.tsx";
 import { useCarga } from "../comunes/usarCarga.ts";
 import { Enlace } from "../navegacion/ruta.tsx";
 
 export function ContadoresInicio({ servicios }: { servicios: ServiciosCotizaciones }) {
-  const { estado, recargar } = useCarga((s) => servicios.contadoresInicio(s), []);
+  const { ambito } = useAmbito();
+  const { estado, recargar } = useCarga((s) => servicios.contadoresInicio(s, ambito), [ambito]);
   if (estado.fase === "cargando") {
     return (
       <p className="ayuda" aria-live="polite">
@@ -40,7 +43,7 @@ export function ContadoresInicio({ servicios }: { servicios: ServiciosCotizacion
         Estado de las cotizaciones
       </h2>
       <p className="ayuda">
-        Toda la organización al {formatearFecha(c.fecha)}. Último folio: <span className="codigo">{c.ultimoFolio ?? "—"}</span>.
+        {ambito ? `Solo «${TEXTO_CLASIFICACION[ambito as keyof typeof TEXTO_CLASIFICACION] ?? ambito}»` : "Todo el historial"} al {formatearFecha(c.fecha)}. Último folio: <span className="codigo">{c.ultimoFolio ?? "—"}</span>.
       </p>
       <ul className="contadores-lista">
         {celdas.map((x) => (

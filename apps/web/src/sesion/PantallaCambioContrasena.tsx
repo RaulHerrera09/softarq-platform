@@ -81,7 +81,10 @@ export function PantallaCambioContrasena({
   sesion,
   alCambiar,
   alCerrar,
+  modo = "temporal",
 }: {
+  /** `temporal`: cambio obligatorio al entrar. `voluntario`: «Mi cuenta → Cambiar contraseña». */
+  modo?: "temporal" | "voluntario";
   sesion: RespuestaSesion;
   alCambiar: (datos: CambioContrasena) => Promise<ResultadoInicio>;
   alCerrar: () => Promise<ResultadoInicio>;
@@ -96,8 +99,8 @@ export function PantallaCambioContrasena({
 
   const minimo = LIMITES_ADMINISTRACION.contrasenaMinima;
   const errores = {
-    actual: actual === "" ? "Escriba la contraseña temporal que le entregaron." : null,
-    nueva: nueva.length < minimo ? `La contraseña nueva debe tener al menos ${minimo} caracteres.` : nueva === actual ? "La contraseña nueva debe ser distinta de la temporal." : null,
+    actual: actual === "" ? (modo === "temporal" ? "Escriba la contraseña temporal que le entregaron." : "Escriba su contraseña actual.") : null,
+    nueva: nueva.length < minimo ? `La contraseña nueva debe tener al menos ${minimo} caracteres.` : nueva === actual ? (modo === "temporal" ? "La contraseña nueva debe ser distinta de la temporal." : "La contraseña nueva debe ser distinta de la actual.") : null,
     confirmacion: confirmacion !== nueva ? "La confirmación no coincide con la contraseña nueva." : null,
   };
   const error = (k: keyof typeof errores) => (intentado ? errores[k] : null) ?? campoDelServidor(fallo, k);
@@ -122,16 +125,17 @@ export function PantallaCambioContrasena({
       ? mensajeDeFallo(fallo)
       : null;
   return (
-    <div className="acceso">
+    <div className={modo === "temporal" ? "acceso" : "cuenta-contrasena"}>
       <section className="acceso-tarjeta" aria-labelledby={`${id}-titulo`}>
         <h1 id={`${id}-titulo`} className="acceso-titulo" tabIndex={-1}>
-          Cambie su contraseña temporal
+          {modo === "temporal" ? "Cambie su contraseña temporal" : "Cambiar contraseña"}
         </h1>
         <p className="ayuda">
           {sesion.usuario.nombre} · {sesion.organizacion.nombre}
         </p>
-        <Aviso tono="info" titulo="Antes de continuar">
-          <p>Entró con una contraseña temporal. Hasta cambiarla solo puede hacer esto o cerrar la sesión. Al terminar se cerrarán todas sus sesiones y entrará con la contraseña nueva.</p>
+        <Aviso tono="info" titulo={modo === "temporal" ? "Antes de continuar" : "Qué pasa al cambiarla"}>
+          {modo === "voluntario" ? <p>Elija la contraseña que prefiera. Al guardarla se cerrarán todas sus sesiones (también esta, y la de la app si la usa) y entrará con la contraseña nueva.</p> : null}
+          {modo === "temporal" ? <p>Entró con una contraseña temporal. Hasta cambiarla solo puede hacer esto o cerrar la sesión. Al terminar se cerrarán todas sus sesiones y entrará con la contraseña nueva.</p> : null}
         </Aviso>
         {avisoFallo ? (
           <Aviso tono="error" titulo="No se cambió la contraseña" rol="alert">
@@ -139,7 +143,7 @@ export function PantallaCambioContrasena({
           </Aviso>
         ) : null}
         <form className="acceso-formulario" onSubmit={(e) => void enviar(e)} noValidate aria-busy={enviando}>
-          <CampoContrasena etiqueta="Contraseña temporal" enfocar valor={actual} alCambiar={setActual} autocompletar="current-password" error={error("actual")} deshabilitado={enviando} />
+          <CampoContrasena etiqueta={modo === "temporal" ? "Contraseña temporal" : "Contraseña actual"} enfocar valor={actual} alCambiar={setActual} autocompletar="current-password" error={error("actual")} deshabilitado={enviando} />
           <CampoContrasena
             etiqueta="Contraseña nueva"
             valor={nueva}
@@ -156,7 +160,7 @@ export function PantallaCambioContrasena({
         </form>
         <div className="formulario-acciones">
           <Boton variante="enlace" onClick={() => void alCerrar()} disabled={enviando}>
-            Cerrar sesión
+            {modo === "temporal" ? "Cerrar sesión" : "Cerrar sesión sin cambiar"}
           </Boton>
         </div>
       </section>

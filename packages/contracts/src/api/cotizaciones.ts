@@ -246,6 +246,10 @@ export const EsquemaConsultaCotizaciones = z.strictObject({
 });
 export type ConsultaCotizaciones = z.infer<typeof EsquemaConsultaCotizaciones>;
 
+/** Alcance de los contadores de «00 INICIO»: toda la organización o solo una clasificación de clientes (vista de presentación). */
+export const EsquemaConsultaContadores = z.strictObject({ clasificacion: EsquemaFiltroClasificacion });
+export type ConsultaContadores = z.infer<typeof EsquemaConsultaContadores>;
+
 export const EsquemaParametroId = z.strictObject({ id: EsquemaUuid });
 export const EsquemaParametroVersion = z.strictObject({
   id: EsquemaUuid,
