@@ -176,3 +176,25 @@ Antes de migrar desarrollo: respaldo `softarq_dev-20261005T143908Z-02ccd5`, COMP
 Prueba completa posterior: **35/35**, respaldo `softarq_dev-20261005T151858Z-1e4ecc` (225.175 bytes; 3/3 PDF). Restaura los tres eventos, compara notas y demás campos con origen, verifica cadenas/fechas/permisos/disparadores, descarga los tres PDF por API temporal y comprueba desarrollo intacto. Informe: `_work\evidencias\respaldo-softarq_dev-20261005T151858Z-1e4ecc\informe.txt`.
 
 Sigue pendiente **repetir realmente el aprovisionamiento administrativo**. No se repitió ni se solicitó una contraseña por chat. La prueba de concurrencia pendiente del módulo anterior queda cubierta por la ejecución descrita, sin atribuirla a la sesión anterior.
+
+## 9. Respaldo cifrado con Vigenère (requisito académico, 14/11/2026)
+
+Decisión y límites: [ADR-0024](../adr/0024-respaldo-cifrado-vigenere.md). **Vigenère es un cifrado clásico, no moderno ni autenticado; los SHA-256 detectan cambios pero no autentican.**
+
+**Algoritmo:** alfabeto de 256 bytes, `c = (p + k) mod 256`; clave = UTF-8 de la frase (mín. 16 bytes) repetida desde el byte 0 de cada archivo. Sin Base64 ni cabecera.
+
+**Clave:**
+1. `pnpm --filter @softarq/api respaldo:clave-crear` (una vez): genera una clave aleatoria y la guarda con DPAPI en `_work\secrets\respaldo-vigenere.dpapi`. No la muestra y no se sobrescribe.
+2. **Guarde una copia aparte** (sin ella no hay recuperación): en su propia terminal, `pnpm --filter @softarq/api respaldo:clave-mostrar --confirmar`; guárdela en un gestor de contraseñas o impresa, nunca en Git, en el respaldo ni en chats. DPAPI solo descifra con la misma cuenta de Windows de este equipo.
+3. Para pruebas o para otra máquina: variable `SOFTARQ_RESPALDO_CLAVE_VIGENERE`.
+
+| Comando (desde `apps/api`) | Qué hace |
+|---|---|
+| `pnpm respaldo:cifrar <carpeta de respaldo COMPLETO>` | Crea `respaldos\softarq_dev_vigenere\<ID>\` con `base.dump.vig`, `manifiesto.json.vig`, `documentos\…\*.pdf.vig` y `manifiesto-cifrado.json` (en claro, con SHA-256 del claro y del cifrado). El original no cambia |
+| `pnpm respaldo:verificar-cifrado <carpeta cifrada>` | Descifra por bloques sin escribir y compara SHA-256 |
+| `pnpm respaldo:descifrar <carpeta cifrada> [--destino <carpeta>]` | Respaldo normal en `_work\respaldo-descifrado\<ID>`; luego `respaldo:verificar` y `respaldo:restaurar` (solo `softarq_restauracion`) |
+| `pnpm respaldo:probar-cifrado` | Prueba completa (compila la API) |
+
+**Resultado verificado (14/11/2026):** `respaldo:probar-cifrado` **24/24**, respaldo `softarq_dev-20261114T170714Z-fcd929` (volcado de 639.525 bytes + 10 PDF + manifiesto = 12 archivos cifrados). Bytes recuperados idénticos por SHA-256; `respaldo:verificar` válido; restauración en `softarq_restauracion` con las 37 tablas iguales al manifiesto y `documentos:revisar` sin ausentes ni dañados; clave incorrecta, archivo truncado, alterado (volcado y PDF), archivo ausente, ausencia de clave y clave corta detectados; documentos de desarrollo intactos; pico de memoria 64 MiB. Informe: `_work\evidencias\vigenere-softarq_dev-20261114T170714Z-fcd929\informe.txt`. El volcado del demo es pequeño: el flujo por bloques se comprobó además con un archivo de 700 KB en pruebas unitarias, no con uno grande.
+
+**Para Railway (pendiente, no implementado):** cifrado autenticado moderno del respaldo, complementario a este requisito.
