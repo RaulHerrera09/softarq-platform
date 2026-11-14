@@ -1,106 +1,248 @@
-# SoftArq Platform
+# SoftArq
 
-Plataforma de **cotización de estructuras de construcción** (fase 2 del proyecto SoftArq). Sucede al libro de Excel de la fase 1 (`Cotizador_Estructuras_F1.xlsm`, versión 1.0.0-F1), que sigue siendo la referencia funcional.
+**SoftArq** es una plataforma para cotizar estructuras de construcción —cubiertas, losas y muros—. Un cliente describe su obra en una app móvil y recibe una estimación preliminar; el equipo atiende la solicitud en un panel web, elige los precios, calcula, revisa, aprueba y emite una cotización formal en PDF.
 
-> **Estado (19/10/2026):** módulos 1 a 15: cálculo, catálogos, API local, web, sesiones, cotizaciones/versiones, revisión, emisión/PDF, [seguimiento interno de respuestas y vigencia](docs/cotizaciones/seguimiento-respuestas.md), [excepciones B-22](docs/adr/0014-excepciones.md) (registradas por el Preparador en el borrador, autorizadas o rechazadas por un Revisor distinto; AV-04) y [administración de proveedores, productos, precios y tarifas](docs/adr/0015-administracion-catalogos.md) (Administrador del catálogo; sin borrado, con historial y sin alterar versiones ni PDF) y [catálogo técnico con aprobación de conceptos](docs/adr/0016-catalogo-tecnico-aprobacion-conceptos.md) (tipos de estructura, insumos, conversiones, conceptos y componentes; BL-05 de trazabilidad; conceptos personalizados) y [parámetros y personas](docs/adr/0017-parametros-personas-permisos.md) (Administrador del sistema: recargo, impuesto, vigencia y plantillas de textos con motivo; altas, funciones, desactivación y contraseña temporal con cambio obligatorio; `db:migrar` solo tras un respaldo verificado) y [salidas internas de solo lectura](docs/adr/0018-salidas-internas.md) (Preparador y Revisor: compras calculadas, detalle del cálculo e indicadores de una versión concreta, con lo congelado en ella) y [duplicar, modo de precios y vista previa BORRADOR](docs/adr/0019-duplicar-modo-precios-vista-previa.md) (folio nuevo desde una versión o el borrador guardado; tras emitir, preparar la versión nueva conservando o eligiendo de nuevo los precios, con motivo; PDF BORRADOR sin guardar, con auditoría). Cobertura frente al Excel y lo que falta: [`docs/cobertura-demo.md`](docs/cobertura-demo.md). Resultados reales y continuidad en [`HANDOFF.md`](HANDOFF.md) §24. Todo dato de ejemplo es **DEMO** y no tiene validez comercial.
->
-> **Módulo 16 (24/10/2026): [app móvil Android](docs/adr/0020-app-movil-expo-conexion-y-sesion-movil.md), etapa 1** (acceso y consulta; sin captura, cálculo ni revisión): proyecto Expo en `apps/mobile`, sesión móvil por `Authorization: Bearer` (tipo de sesión propio `MOVIL`; la web no cambia), el teléfono llega a la API local por USB (`adb reverse`) y la APK se compila con EAS Build. Detalle en [`HANDOFF.md`](HANDOFF.md) §26.
+Sucede al libro de Excel de la fase 1 (`Cotizador_Estructuras_F1.xlsm`) y a su documento maestro, que definieron las reglas de cálculo y de negocio. Esas reglas viven ahora en un único motor de cálculo en la API.
 
-## Estructura
+> **Entorno DEMO.** Todos los datos de ejemplo son ficticios y están marcados como DEMO en pantallas y documentos. El sistema no es apto para cotizaciones comerciales reales.
 
-| Ruta | Contenido | Tecnología prevista |
-|---|---|---|
-| `apps/api` | API: cálculos, permisos, reglas de negocio y validación. Hoy: dominio de cálculo, catálogos, sesiones, clientes, proyectos y cotizaciones con versiones, por HTTP local | NestJS 12, decimal.js, Prisma 7.10 + PostgreSQL 18, Zod 4 y Vitest |
-| `apps/web` | Cliente web DEMO: calculadora, clientes, proyectos, cotizaciones con borrador, versiones e historial | React 19 + Vite 8, TypeScript 7, Playwright |
-| `apps/mobile` | App Android DEMO, etapa 1 (módulo 16): acceso y consulta de clientes, proyectos y cotizaciones; [guía del teléfono](docs/movil/guia-instalacion-y-pruebas.md) | React Native + Expo SDK 58, `expo-router`, EAS Build (APK) |
-| `packages/contracts` | Contratos compartidos sin lógica: tipos del cálculo y esquemas Zod de la API HTTP (definición única) | TypeScript (ESM), Zod 4 |
-| `docs` | Decisiones de arquitectura y referencias a la fase 1 | Markdown |
+## Qué resuelve
 
-Principio: **los clientes solo comparten contratos**. Toda regla de negocio vive en la API.
+Cotizar una estructura exige medidas, precios vigentes y control. SoftArq separa las tareas por persona y deja constancia de quién hizo qué, con qué precios y cuándo:
 
-## Documentos de trabajo
+- el **cliente** captura su obra y ve una estimación orientativa;
+- el **equipo** prepara la cotización formal con precios elegidos de forma explícita;
+- una **segunda persona** revisa y aprueba;
+- la **emisión** produce un documento inalterable, con folio, vigencia y huella SHA-256.
 
-- [`AGENTS.md`](AGENTS.md): reglas para personas y agentes (Claude, Codex).
-- [`CLAUDE.md`](CLAUDE.md): importa `AGENTS.md` y añade notas específicas de Claude Code.
-- [`HANDOFF.md`](HANDOFF.md): estado actual, decisiones vigentes y siguiente paso. **Léelo primero.**
-- [`docs/`](docs/README.md): decisiones (ADR), matriz de reglas del cálculo, modelo conceptual y estado verificado de la fase 1.
-- [`docs/herramientas/skills.md`](docs/herramientas/skills.md): skills de Claude Code (`.claude/skills/`) y Codex (`.agents/skills/`), con sus reglas de uso (`AGENTS.md` §11).
-- [`docs/herramientas/graphify.md`](docs/herramientas/graphify.md): grafo de código local para los agentes (Graphify, solo AST; `AGENTS.md` §12):
+## Funciones principales
 
-  ```
-  pnpm grafo:estado          # ¿refleja el grafo los archivos actuales?
-  pnpm grafo:actualizar      # reconstruye (AST, sin modelos); salida en graphify-out/, ignorada por Git
-  pnpm grafo:instalar-hooks  # una vez por clon: actualiza tras cambiar de rama o integrar
-  graphify query "<pregunta concreta>" --budget 800
-  ```
+### App del cliente (Android, Expo)
 
-## Requisitos locales
+- Acceso con cuenta de cliente (con cambio de la contraseña temporal) y cierre de sesión.
+- Proyectos y trabajos (cubierta, losa o muro), medidas con un croquis de apoyo y resumen.
+- **Estimación preliminar** calculada por la API, siempre rotulada como no formal.
+- Envío de la solicitud al equipo, seguimiento y descarga del PDF de la cotización emitida.
+- Solo muestra y captura: no calcula ni decide permisos.
 
-| Herramienta | Versión verificada (02/10/2026) |
+<p>
+  <img src="docs/imagenes/app-inicio.jpg" alt="Vista ilustrativa de la app: pantalla de inicio" width="240">
+  <img src="docs/imagenes/app-medidas.jpg" alt="Vista ilustrativa de la app: medidas con croquis de apoyo" width="240">
+</p>
+
+*Vista ilustrativa de la app (identidad «Obra cálida»; nombres y cifras de ejemplo).*
+
+### Panel del equipo (web)
+
+Cada función ve solo sus secciones:
+
+- **Mi trabajo, Solicitudes y Cotizaciones:** bandeja de solicitudes de clientes, borradores, versiones, duplicado y vista previa del PDF.
+- **Revisiones:** bandeja del Revisor para aprobar o pedir cambios.
+- **Clientes y Proyectos**, con clasificación y filtros.
+- **Catálogo:** proveedores, productos, precios con vigencia, mano de obra, insumos, conversiones, conceptos, componentes, tipos de estructura, trabajos para clientes y precios de referencia de la estimación.
+- **Administración:** parámetros (recargo, impuesto, vigencia, textos), personas y funciones, y emisor del documento.
+- **Exportaciones:** exportación de 15 tablas y manifiesto en CSV (no es una migración completa; la recuperación completa es el respaldo).
+
+![Bandeja de solicitudes del panel](docs/imagenes/panel-bandeja-solicitudes.jpg)
+
+## Del pedido a la emisión
+
+1. **Solicitud.** El cliente captura su obra en la app y ve la estimación preliminar. Al enviarla, la estimación no se hereda: es solo una referencia.
+2. **Atención.** El Preparador atiende la solicitud desde la bandeja y se crea un borrador de cotización con su folio `COT-AAAA-NNNNN`.
+3. **Precios.** El Preparador elige explícitamente un precio por insumo (el sistema señala el menor, pero nunca lo elige solo) y puede registrar excepciones con motivo.
+4. **Cálculo.** La API calcula con aritmética decimal exacta y guarda una **versión inmutable**.
+5. **Revisión y aprobación.** Otra persona revisa; quien aprueba no puede ser quien preparó la versión. Las excepciones las autoriza un Revisor distinto del preparador. Aprobar no es emitir.
+6. **Emisión.** Se genera el PDF con folio, vigencia y huella SHA-256 y se registra la emisión, que ya no puede cambiar. Un cambio posterior crea una versión nueva, con motivo.
+7. **Seguimiento.** El equipo registra la respuesta del cliente, y el cliente ve su cotización emitida y descarga el PDF desde la app.
+
+![Solicitud atendida](docs/imagenes/panel-solicitud.jpg)
+
+![Cotización emitida con su PDF](docs/imagenes/panel-cotizacion-emitida.jpg)
+
+Los PDF comerciales nunca incluyen costos, proveedores, consumos, recargo, margen ni excepciones, y llevan la marca «DEMOSTRACIÓN» en cada página.
+
+## Arquitectura
+
+```mermaid
+flowchart TB
+  subgraph Clientes
+    WEB["Panel del equipo<br/>React 19 + Vite 8"]
+    APP["App del cliente<br/>Expo SDK 58 (Android)"]
+  end
+  CON["@softarq/contracts<br/>tipos y esquemas Zod, sin lógica"]
+  API["API NestJS 12<br/>cálculo, permisos y reglas de negocio"]
+  DB[("PostgreSQL 18<br/>Prisma 7.10")]
+  DOC[("Carpeta persistente<br/>de PDF emitidos")]
+  WEB --> API
+  APP --> API
+  WEB -. importa .-> CON
+  APP -. importa .-> CON
+  API -. importa .-> CON
+  API --> DB
+  API --> DOC
+```
+
+- **La API es la única fuente de cálculos, permisos y reglas de negocio.** Web y app solo capturan y muestran.
+- La web usa sesión por cookie `HttpOnly` con protección CSRF; la app usa una sesión de tipo móvil por `Authorization: Bearer`, solo en rutas habilitadas para ella.
+- Los importes viajan como cadenas decimales y se calculan con `decimal.js`; el redondeo a centavos es mitad hacia arriba. Moneda única: MXN.
+- Los PDF emitidos se guardan en una carpeta persistente fuera del repositorio; la base conserva su tamaño y SHA-256.
+
+## Stack
+
+| Capa | Tecnología |
 |---|---|
-| Git | 2.51.0 |
-| Node.js | 24.11.1 |
-| pnpm | 11.1.3 |
-| PostgreSQL | 18.6 (servicio local, datos en `D:\Postgres18\data`) |
+| API | NestJS 12, TypeScript, Zod 4, decimal.js, PDFKit, Argon2id (`@node-rs/argon2`) |
+| Base de datos | PostgreSQL 18, Prisma 7.10 con adaptador `pg`, roles migrador, aplicación y respaldo |
+| Web | React 19.3, Vite 8.3, Playwright (pruebas de navegador) |
+| App móvil | Expo SDK 58, React Native 0.88, `expo-router`, EAS Build |
+| Contratos | TypeScript (ESM) y Zod 4 |
+| Pruebas | Vitest, Playwright |
+| Gestor de paquetes | pnpm 11 (monorepo) |
 
-Laptop actual (verificado el 24/10/2026): Git 2.55.0, Node.js 24.11.1, npm 11.6.2, pnpm 11.1.3, PostgreSQL 18.6 (servicio `postgresql-x64-18`, `C:\Program Files\PostgreSQL\18`), Python 3.14.6 con Graphify 0.8.5 en `_work\graphify-venv`. Detalle en `HANDOFF.md` §25.
+## Estructura del repositorio
 
-App móvil (módulo 16): Expo SDK 58 (React Native 0.88, React 19.3.0), TypeScript 6.0.3 solo en `apps/mobile` (la versión que valida Expo; API y web siguen en 7.0.2), `eas-cli` 25.2.0 vía `pnpm dlx` y Android Platform Tools 37.0.1 (solo `adb`) en `_work\tools`. Sin Android Studio, SDK completo, emuladores ni Docker.
+```
+apps/
+  api/        API: dominio de cálculo, catálogos, sesiones, cotizaciones, PDF, esquema Prisma,
+              migraciones y scripts de base de datos y respaldo
+  web/        Panel del equipo (React + Vite) y pruebas de navegador
+  mobile/     App del cliente (Expo)
+packages/
+  contracts/  Tipos, esquemas y enumeraciones compartidas (sin lógica de negocio)
+docs/         Decisiones (ADR), cálculo, operación, API (OpenAPI) y guías
+scripts/      Utilidades del repositorio
+```
 
-Cachés y almacenes de paquetes van a `<raíz>\_work` (configurado con rutas relativas en `pnpm-workspace.yaml` y `.npmrc`).
+## Requisitos
+
+- Windows con PowerShell (los scripts de aprovisionamiento de PostgreSQL son `.ps1`).
+- Node.js ≥ 24.11 y pnpm ≥ 11.1 (`packageManager: pnpm@11.1.3`).
+- PostgreSQL 18 local, con acceso de administrador para crear los roles y las bases.
+- Microsoft Edge, solo para las pruebas de navegador.
+- Para la app móvil: un teléfono Android y una cuenta de Expo (EAS) para compilar la *development build*.
+
+## Instalación y arranque
+
+Desde la raíz del repositorio:
+
+```powershell
+pnpm install --frozen-lockfile
+
+# 1. Credenciales locales aleatorias: crea apps/api/.env y apps/api/.env.test (no se versionan)
+pnpm --filter @softarq/api db:credenciales
+
+# 2. Roles y bases de PostgreSQL (pide la contraseña del administrador de PostgreSQL)
+powershell -ExecutionPolicy Bypass -File apps\api\scripts\db\aprovisionar.ps1
+
+# 3. Comprobar las conexiones
+cd apps/api; node scripts/db/comprobar-conexion.mjs; cd ../..
+
+# 4. Esquema, catálogo y cuentas DEMO
+pnpm --filter @softarq/api db:migrar
+pnpm --filter @softarq/api db:cargar-demo
+pnpm --filter @softarq/api db:cargar-usuarios-demo
+```
+
+Añade a `apps/api/.env` la carpeta persistente de los PDF emitidos (ruta absoluta, fuera del repositorio):
+
+```
+SOFTARQ_DIR_DOCUMENTOS=<ruta absoluta de una carpeta fuera del repositorio>
+```
+
+Arranque:
+
+```powershell
+# API: escucha solo en 127.0.0.1:3000
+pnpm --filter @softarq/api build
+pnpm --filter @softarq/api start
+
+# Panel web: http://localhost:5173 (con la API en marcha)
+pnpm --filter @softarq/web dev
+```
+
+Comprobación de la API: `GET http://127.0.0.1:3000/health` responde `{"estado":"ok","baseDeDatos":"disponible"}`.
+
+Las contraseñas de las cuentas DEMO se generan al cargarlas y se guardan en `_work/secrets/`, en la carpeta que contiene el repositorio, fuera de Git; la consola solo muestra esa ruta. Para la app móvil, consulta la [guía del teléfono](docs/movil/guia-instalacion-y-pruebas.md).
 
 ## Configuración
 
-1. Instala y verifica desde la raíz del repositorio:
+Los archivos de ejemplo no contienen valores secretos:
 
-```
-pnpm install --frozen-lockfile
-pnpm verificar          # build + typecheck + test de todos los paquetes
-pnpm verificar:secuencial  # lo mismo, un paquete a la vez (equipos de 2 núcleos y 8 GB: evita fallos de tiempo por carga)
-```
+| Archivo | Para qué |
+|---|---|
+| [`.env.example`](.env.example) | Plantilla de variables de la API y de la base de datos |
+| [`apps/web/.env.example`](apps/web/.env.example) | `VITE_API_URL` (pública; Vite la incrusta en el navegador) |
+| [`apps/mobile/.env.example`](apps/mobile/.env.example) | `EXPO_PUBLIC_API_URL` (pública) |
 
-2. Prepara PostgreSQL local (credenciales locales, roles, bases, migraciones y catálogo DEMO): sigue [`apps/api/README.md`](apps/api/README.md#preparar-el-entorno-desde-cero). Después:
+Los archivos reales (`.env`, `.env.test`, `.env.respaldo`, claves y respaldos) están excluidos de Git. Las variables `VITE_*` y `EXPO_PUBLIC_*` son públicas: nunca llevan credenciales.
 
-```
-pnpm verificar:integracion   # pruebas contra softarq_test (la única base que pueden vaciar)
-```
+## Permisos
 
-3. Arranca la API local (solo `127.0.0.1:3000`) y consulta [`docs/api/README.md`](docs/api/README.md):
+Se comprueban en el servidor en cada operación, a partir de la sesión; el cliente nunca envía su rol.
 
-```
-pnpm --filter @softarq/api build
-pnpm --filter @softarq/api start
-curl -s http://127.0.0.1:3000/health
-```
+| Función | Puede |
+|---|---|
+| Preparador | Atender solicitudes, preparar y calcular cotizaciones, enviar a revisión, registrar respuestas del cliente y emitir |
+| Revisor | Aprobar o pedir cambios y emitir; nunca aprueba lo que preparó |
+| Administrador del catálogo | Gestionar proveedores, productos, precios, tarifas, conceptos y referencias |
+| Administrador del sistema | Parámetros, personas y funciones, y emisor del documento |
+| Cliente (app) | Sus propias solicitudes y cotizaciones |
 
-   Las cuentas DEMO se crean con `pnpm --filter @softarq/api db:cargar-usuarios-demo`; sus accesos quedan en `D:\Proyecto_SoftArq\_work\secrets\accesos-demo-softarq_dev.json`, fuera del repositorio ([ADR-0007](docs/adr/0007-autenticacion-sesiones.md)). Desde el módulo 13, el Administrador del sistema da de alta más personas en «Administración» con una contraseña temporal que se entrega en persona y que la persona cambia al entrar ([ADR-0017](docs/adr/0017-parametros-personas-permisos.md)).
+## Versiones y documentos
 
-4. Abre la web DEMO (con la API en marcha) en **http://localhost:5173** e inicia sesión con una cuenta DEMO ([`apps/web/README.md`](apps/web/README.md); guía de prueba en [`docs/web/guia-prueba-manual.md`](docs/web/guia-prueba-manual.md)):
+- Una versión de cotización es **inmutable**; los cambios crean una versión nueva con motivo.
+- Los folios (`COT-AAAA-NNNNN`) no se reutilizan.
+- La emisión es un registro inalterable (API y disparadores de PostgreSQL) con el SHA-256 del PDF; la descarga entrega exactamente esos bytes.
+- La API accede a PostgreSQL con un rol de privilegios mínimos, sin DDL ni borrado en las tablas protegidas.
 
-```
-pnpm --filter @softarq/web dev
-pnpm verificar:e2e      # pruebas de navegador: web compilada + API real + softarq_test
-```
+## Pruebas
 
-5. Respaldo y recuperación local de `softarq_dev` y sus PDF ([guía](docs/operacion/respaldo-y-restauracion.md); aprovisionamiento único con `apps\api\scripts\db\aprovisionar-respaldo.ps1`):
-
-```
-pnpm --filter @softarq/api respaldo:crear                  # → D:\Proyecto_SoftArq\respaldos\softarq_dev\<ID>
-pnpm --filter @softarq/api respaldo:verificar <carpeta>
-pnpm --filter @softarq/api respaldo:probar-restauracion    # restauración aislada en softarq_restauracion
-```
-
-`.env.example` documenta las variables; los archivos reales (`apps/api/.env`, `.env.test`) los genera `db:credenciales` y no se versionan.
-
-Para mantener los temporales fuera de `C:`, en la sesión de terminal:
-
-```
-# Git Bash
-export TEMP=/d/Proyecto_SoftArq/_work/tmp TMP=/d/Proyecto_SoftArq/_work/tmp
-# PowerShell
-$env:TEMP='D:\Proyecto_SoftArq\_work\tmp'; $env:TMP=$env:TEMP
+```powershell
+pnpm verificar                # compila, comprueba tipos y ejecuta las pruebas unitarias de todos los paquetes
+pnpm verificar:secuencial     # lo mismo, un paquete a la vez (equipos con poca memoria)
+pnpm verificar:integracion    # API contra PostgreSQL; solo usa y vacía la base softarq_test
+pnpm verificar:e2e            # recorridos de navegador con Playwright y Microsoft Edge
 ```
 
-## Relación con la fase 1
+El cálculo se contrasta con los casos de referencia de la fase 1 (reglas CR-01 a CR-16): ver la [matriz de reglas](docs/calculo/matriz-reglas.md).
 
-La entrega de la fase 1 está en `D:\Proyecto_SoftArq\entrega\` y **no forma parte de este repositorio**. No se copian el Excel, el Word, respaldos ni PDF aquí. Ver [`docs/fase1-estado-verificado.md`](docs/fase1-estado-verificado.md).
+## Respaldo y recuperación
+
+El respaldo de la base `softarq_dev` y de los PDF emitidos usa una instantánea coherente, con manifiesto y SHA-256, y se restaura únicamente en una base aislada.
+
+```powershell
+pnpm --filter @softarq/api respaldo:crear                    # respaldo con manifiesto
+pnpm --filter @softarq/api respaldo:verificar <carpeta>      # comprueba hashes y legibilidad
+pnpm --filter @softarq/api respaldo:restaurar <carpeta>      # restauración de prueba, solo en softarq_restauracion
+pnpm --filter @softarq/api respaldo:probar-restauracion      # prueba completa de recuperación
+```
+
+### Vigenère (requisito académico)
+
+Además, el respaldo puede cifrarse con **Vigenère sobre bytes** (alfabeto de 256 valores, `c = (p + k) mod 256`), aplicado por bloques al volcado, a cada PDF y al manifiesto. La clave es un texto de al menos 16 bytes que se guarda aparte del respaldo y fuera de Git (variable de entorno o archivo protegido con DPAPI de Windows). Es un cifrado clásico con fines académicos; la integridad de lo recuperado se verifica con los SHA-256 del manifiesto.
+
+```powershell
+pnpm --filter @softarq/api respaldo:clave-crear                  # genera y protege la clave local
+pnpm --filter @softarq/api respaldo:cifrar <carpeta de respaldo>
+pnpm --filter @softarq/api respaldo:verificar-cifrado <carpeta cifrada>
+pnpm --filter @softarq/api respaldo:descifrar <carpeta cifrada>
+pnpm --filter @softarq/api respaldo:probar-cifrado               # prueba completa de cifrado y restauración
+```
+
+Detalle y límites: [guía de respaldo](docs/operacion/respaldo-y-restauracion.md) y [ADR-0024](docs/adr/0024-respaldo-cifrado-vigenere.md).
+
+## Documentación técnica
+
+| Tema | Enlace |
+|---|---|
+| Índice de la documentación | [`docs/README.md`](docs/README.md) |
+| API HTTP (OpenAPI) | [`docs/api/README.md`](docs/api/README.md), [`docs/api/openapi.json`](docs/api/openapi.json) |
+| Reglas del cálculo | [`docs/calculo/matriz-reglas.md`](docs/calculo/matriz-reglas.md) |
+| Modelo de datos y permisos | [`docs/modelo-conceptual.md`](docs/modelo-conceptual.md) |
+| Cobertura frente a la fase 1 | [`docs/cobertura-demo.md`](docs/cobertura-demo.md) |
+| Preparar la base de datos | [`apps/api/README.md`](apps/api/README.md) |
+| Panel web y sistema visual | [`apps/web/README.md`](apps/web/README.md), [`docs/web/sistema-visual.md`](docs/web/sistema-visual.md) |
+| App del cliente | [`docs/movil/guia-instalacion-y-pruebas.md`](docs/movil/guia-instalacion-y-pruebas.md), [`docs/movil/api-del-cliente.md`](docs/movil/api-del-cliente.md) |
+| Decisiones de arquitectura | [`docs/adr/`](docs/adr/) (monorepo, cálculo, sesiones, versiones, emisión, respaldo, app del cliente, identidad visual) |
+| Operación: respaldo y restauración | [`docs/operacion/respaldo-y-restauracion.md`](docs/operacion/respaldo-y-restauracion.md) |
+| Reglas de trabajo del repositorio | [`AGENTS.md`](AGENTS.md) |
